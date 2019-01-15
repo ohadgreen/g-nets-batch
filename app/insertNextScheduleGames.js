@@ -7,8 +7,8 @@ const SchedJobTest = mongoose.model("schedtest");
 
 module.exports = {
   // test function
-  myTest: () => {
-    console.log("my test");
+  myTest: (keys) => {
+    console.log("test message: " + keys.MSG);
   },
 
   schedTestInsert: () => {

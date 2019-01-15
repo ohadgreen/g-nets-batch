@@ -1,4 +1,4 @@
 const dbFunctions = require('./app/insertNextScheduleGames');
 
-// dbFunctions.myTest();
-dbFunctions.schedTestInsert();
+dbFunctions.myTest();
+// dbFunctions.schedTestInsert();

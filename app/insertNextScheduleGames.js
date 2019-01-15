@@ -7,24 +7,32 @@ const SchedJobTest = mongoose.model("schedtest");
 
 module.exports = {
   // test function
-  myTest: (keys) => {
+  myTest: keys => {
     console.log("test message: " + keys.MSG);
   },
 
-  schedTestInsert: (keys) => {
-    mongoose.connect(keys.MONGO_URI);
-    const db = mongoose.connection;
-    db.once("open", function() {
+  asyncSaveTest: async keys => {
+    mongoose.connect(
+      keys.MONGO_URI,
+      { useNewUrlParser: true }
+    );
 
     const currentTime = new Date();
     const msg = `${currentTime.getHours()}:${currentTime.getMinutes()} tic`;
-
-    const schedJobTic = new SchedJobTest({ ticTime: currentTime, message: msg });
-    schedJobTic.save(function(err, tic) {
-      if (err) return handleError(err);
-      console.log(`${tic.message} saved`);
+    const schedJobTic = new SchedJobTest({
+      ticTime: currentTime,
+      message: msg
     });
-  });
+    try {
+      const saveRes = await schedJobTic.save();
+      if (saveRes) {
+        return "tic saved";
+      } else {
+        return "db error";
+      }
+    } catch (err) {
+      return err.code;
+    }
   },
 
   insertToDb: () => {

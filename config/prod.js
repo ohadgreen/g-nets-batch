@@ -1,4 +1,4 @@
 module.exports = {
-    msg: process.env.MSG,
+    MSG: process.env.MSG,
     DB_CONN: process.env.MONGO_URI,
   };

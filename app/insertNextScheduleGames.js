@@ -1,4 +1,4 @@
-require("dotenv").config();
+// require("dotenv").config();
 const mongoose = require("mongoose");
 require("../model/GameSchedule");
 require("../model/SchedJobTest");
@@ -11,8 +11,8 @@ module.exports = {
     console.log("test message: " + keys.MSG);
   },
 
-  schedTestInsert: () => {
-    mongoose.connect(process.env.DB_CONN);
+  schedTestInsert: (keys) => {
+    mongoose.connect(keys.MONGO_URI);
     const db = mongoose.connection;
     db.once("open", function() {
 

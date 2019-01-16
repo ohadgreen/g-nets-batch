@@ -1,8 +1,7 @@
 // require("dotenv").config();
 const mongoose = require("mongoose");
-require("../model/GameSchedule");
+require("../model/Game");
 require("../model/SchedJobTest");
-const GameSchedule = mongoose.model("game-schedules");
 const SchedJobTest = mongoose.model("schedtest");
 
 module.exports = {

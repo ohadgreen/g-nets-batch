@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+mongoose.set('useFindAndModify', false);
 const axios = require("axios");
 require("../model/Team");
 require("../model/Game");
@@ -9,9 +10,9 @@ const API_URL =
 const GAMES_FETCH_LIMIT = 2;
 
 module.exports = {
-  insertNextDayGames: async keys => {
-    const nextDayDateParams = calcDateParams(1);
-    console.log("nextday params" + JSON.stringify(nextDayDateParams));
+  insertNextDayGames: async (keys, daysDiff) => {
+    const nextDayDateParams = calcDateParams(daysDiff);
+    console.log(`Games insert date: ${nextDayDateParams.day}-${nextDayDateParams.month}-${nextDayDateParams.year}`);
     let schedGamesData = await fetchGames(nextDayDateParams, keys.SPORTRADAR_API_KEY);
 
     if (schedGamesData) {
@@ -27,23 +28,30 @@ module.exports = {
     }
 },
 
-  updatePrevDayGamesScore: async keys => {
-    const prevDayDateParams = calcDateParams(-1);
-    console.log("prevday params" + JSON.stringify(prevDayDateParams));
+  updatePrevDayGamesScore: async (keys, daysDiff) => {
+    const prevDayDateParams = calcDateParams(daysDiff);
+    console.log(`Games update scores date: ${prevDayDateParams.day}-${prevDayDateParams.month}-${prevDayDateParams.year}`);
     let schedGamesData = await fetchGames(prevDayDateParams, keys.SPORTRADAR_API_KEY);
 
     if (schedGamesData) {
-      mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
+      await mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
       const dbGamesList = await apiGamesListToDbGamesList(schedGamesData.games, 100);
       let updateErrorAggregation;
       let status = 0;
-      const dbUpdateRes = await Promise.all(dbGamesList.map((game) => {
-        const updateGameRes = updateGameScores(game);
-        if (updateGameRes.error) {
-          updateErrorAggregation += dbUpdateRes.error;
-          status ++;
+      let updateCount = 0;
+
+      for (game of dbGamesList) {        
+        const updateRes = await updateGameScores(game);
+        if(updateRes.status === 0) {
+          console.log(`** ${updateCount+1}. ${updateRes.updatedGame.srId} ${updateRes.updatedGame._id}`);
+          updateCount++;
         }
-      }));
+        if(updateRes.status === -2){
+          status = -2;
+          updateErrorAggregation += ' ' + updateRes.error;
+        }
+      }
+
       if(status === 0){
         return "day games scores updated";
       }
@@ -91,7 +99,6 @@ async function fetchGames(date, apiKey) {
 }
 
 async function fetchTeamStats() {
-  // mongoose.connect(mongoUri, { useNewUrlParser: true });
   try {
       const dbTeamList = await Team.find({}).select('srId');
       if(dbTeamList) {
@@ -109,6 +116,7 @@ async function insertGamesBatchToDb(gamesList) {
   try {
       const saveGamesRes = await Game.create(gamesList);
       if (saveGamesRes) {
+        saveGamesRes.map((game, i) => { console.log(`** ${i+1}. ${game.srId} ${game._id}`); })
         return { status: 0 };
       }
       else {
@@ -124,14 +132,14 @@ async function updateGameScores(game) {
   try {
     const gameUpdateRes = await Game.findOneAndUpdate({ srId: game.srId }, { $set: { results: game.results } }, { new: true });
     if (gameUpdateRes) {
-      return { status: 0 };
+      return { status: 0, updatedGame: {"_id": gameUpdateRes._id, "srId": gameUpdateRes.srId} };
     }
     else {
-      return { status: -1, error: 'unknown server error' };
+      return { status: -1, error: 'game not found' };
     }
   } catch (error) {
-    console.log(`error.code: ${error.code} error.name: ${error.name} ` );
-      return { status: -1, error: error.name };
+    console.log(`error.code: ${error.code} error.name: ${error.name}` );
+      return { status: -2, error: error.name };
   }
 }
 

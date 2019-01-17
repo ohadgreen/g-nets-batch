@@ -14,6 +14,7 @@ module.exports = {
     if (newTeamDataFromApi) {
       const teamListUpdatedData = apiToDbTeamList(newTeamDataFromApi.conferences);
       let errorResults = [];
+      let teamCount = 0;
 
       mongoose.connect(
         keys.MONGO_URI,
@@ -38,12 +39,15 @@ module.exports = {
             }
           }
         );
-        if(updateRes.ok !== 1){
-            errorResults.push({ teamName: newTeamData.name, result: updateRes })
+        if(updateRes.ok === 1){
+            teamCount++;
         }
+        else {
+          errorResults.push({ teamName: newTeamData.name, result: updateRes })
+      }
       }
       if (errorResults.length === 0) {
-        return 'update complete';
+        return 'update complete for ' +teamCount + ' teams';
       }
       else {
           return errorResults;
@@ -55,8 +59,6 @@ module.exports = {
   async function fetchTeamStatsFromApi(apiKey) {
     let scheduleGamesApiUrl = API_URL.replace("YEAR", YEAR).replace("SEASON_TYPE", SEASON_TYPE);
       scheduleGamesApiUrl += "?api_key=" + apiKey;
-      console.log("teams stat api: " + scheduleGamesApiUrl);
-  
       const response = await axios({
         url: scheduleGamesApiUrl,
         method: "GET",

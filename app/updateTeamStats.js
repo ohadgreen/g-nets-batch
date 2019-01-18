@@ -11,7 +11,10 @@ module.exports = {
   updateTeamStatsInDb: async keys => {
     let newTeamDataFromApi = await fetchTeamStatsFromApi(keys.SPORTRADAR_API_KEY);
 
-    if (newTeamDataFromApi) {
+    if (!newTeamDataFromApi) {
+      return "error fetching teams data";
+    }
+    else {
       const teamListUpdatedData = apiToDbTeamList(newTeamDataFromApi.conferences);
       let errorResults = [];
       let teamCount = 0;
@@ -57,23 +60,28 @@ module.exports = {
 };
 
   async function fetchTeamStatsFromApi(apiKey) {
-    let scheduleGamesApiUrl = API_URL.replace("YEAR", YEAR).replace("SEASON_TYPE", SEASON_TYPE);
-      scheduleGamesApiUrl += "?api_key=" + apiKey;
-      const response = await axios({
-        url: scheduleGamesApiUrl,
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Access-Control-Allow-Origin": "*"
+    try {
+      let scheduleGamesApiUrl = API_URL.replace("YEAR", YEAR).replace("SEASON_TYPE", SEASON_TYPE);
+        scheduleGamesApiUrl += "?api_key=" + apiKey;
+        const response = await axios({
+          url: scheduleGamesApiUrl,
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+    
+        if (response.status === 200) {
+          return response.data;
+        } else {
+          console.log("cannot fetch team stats from api");
+          return null;
         }
-      });
-  
-      if (response.status === 200) {
-        return response.data;
-      } else {
-        console.log("cannot fetch team stats from api");
-        return null;
-      }
+    } catch (error) {
+      console.log('error fetching teams data ' + error.message);
+      return null;
+    }
   };
 
   function apiToDbTeamList(apiData) {

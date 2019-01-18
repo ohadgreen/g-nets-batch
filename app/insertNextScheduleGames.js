@@ -15,7 +15,9 @@ module.exports = {
     console.log(`Games insert date: ${nextDayDateParams.day}-${nextDayDateParams.month}-${nextDayDateParams.year}`);
     let schedGamesData = await fetchGames(nextDayDateParams, keys.SPORTRADAR_API_KEY);
 
-    if (schedGamesData) {
+    if (!schedGamesData) {
+      return "error fetching games for insert";
+    } else {
       mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
       const dbGamesList = await apiGamesListToDbGamesList(schedGamesData.games, GAMES_FETCH_LIMIT);
       const dbSaveRes = await insertGamesBatchToDb(dbGamesList);
@@ -33,7 +35,9 @@ module.exports = {
     console.log(`Games update scores date: ${prevDayDateParams.day}-${prevDayDateParams.month}-${prevDayDateParams.year}`);
     let schedGamesData = await fetchGames(prevDayDateParams, keys.SPORTRADAR_API_KEY);
 
-    if (schedGamesData) {
+    if (!schedGamesData) {
+      return "error fetching games for update";
+    } else {
       await mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
       const dbGamesList = await apiGamesListToDbGamesList(schedGamesData.games, 100);
       let updateErrorAggregation;
@@ -51,7 +55,6 @@ module.exports = {
           updateErrorAggregation += ' ' + updateRes.error;
         }
       }
-
       if(status === 0){
         return "day games scores updated";
       }
@@ -97,10 +100,9 @@ async function fetchGames(date, apiKey) {
       return null;
     }
   } catch (error) {
-    console.log('error fetching games data ' + error.code + ' ' + error.message);
+    console.log('error fetching games data ' + error.message);
+    return null;
   }
-
-  
 }
 
 async function fetchTeamStats() {

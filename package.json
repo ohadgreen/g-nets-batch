@@ -2,7 +2,7 @@
   "name": "gnets-be",
   "version": "1.0.0",
   "description": "gnets backend",
-  "main": "index.js",
+  "main": "batchIndex.js",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

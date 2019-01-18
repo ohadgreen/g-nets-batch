@@ -76,26 +76,31 @@ function calcDateParams(dayDiff) {
 
 async function fetchGames(date, apiKey) {
   const { day, month, year } = date;
-  let scheduleGamesApiUrl = API_URL.replace("YEAR", year)
+  let scheduleGamesApiUrl = API_URL
+    .replace("YEAR", year)
     .replace("MONTH", month)
     .replace("DAY", day);
   scheduleGamesApiUrl += "?api_key=" + apiKey;
-
-  const response = await axios({
-    url: scheduleGamesApiUrl,
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Access-Control-Allow-Origin": "*"
+  try {
+    const response = await axios({
+      url: scheduleGamesApiUrl,
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      console.log("cannot fetch games sched from api");
+      return null;
     }
-  });
-
-  if (response.status === 200) {
-    return response.data;
-  } else {
-    console.log("cannot fetch games sched from api");
-    return null;
+  } catch (error) {
+    console.log('error fetching games data ' + error.code + ' ' + error.message);
   }
+
+  
 }
 
 async function fetchTeamStats() {

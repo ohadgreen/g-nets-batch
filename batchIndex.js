@@ -15,7 +15,7 @@ async function start() {
     const preDayGamesUpdate = await gamesInfoUpdate.updatePrevDayGamesScore(keys, -1);
     console.log('prev day games update result: ' + preDayGamesUpdate);
     console.log('********** PROCESS COMPLETE ***********');
-    // process.exit(0);
+    // process.exit(0); 
 };
 start();
 

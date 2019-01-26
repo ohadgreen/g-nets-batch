@@ -6,8 +6,10 @@ const SchedJobTest = mongoose.model("schedtest");
 
 module.exports = {
   // test function
-  myTest: keys => {
-    console.log("test message: " + keys.MSG);
+  myTest: () => {
+    const currentTime = new Date();
+    const msg = `${currentTime.getHours()}:${currentTime.getMinutes()}`;
+    console.log("test: " + msg);
   },
 
   asyncSaveTest: async keys => {

@@ -3,6 +3,7 @@ mongoose.set('useFindAndModify', false);
 const axios = require("axios");
 require("../model/Team");
 require("../model/Game");
+const dateUtils = require('./utils/DateUtils');
 const Team = mongoose.model("teams");
 const Game = mongoose.model("games");
 const API_URL =
@@ -11,7 +12,7 @@ const GAMES_FETCH_LIMIT = 2;
 
 module.exports = {
   insertNextDayGames: async (keys, daysDiff) => {
-    const nextDayDateParams = calcDateParams(daysDiff);
+    const nextDayDateParams = dateUtils.calcDayParams(daysDiff); //calcDateParams(daysDiff);
     console.log(`Games insert date: ${nextDayDateParams.day}-${nextDayDateParams.month}-${nextDayDateParams.year}`);
     let schedGamesData = await fetchGames(nextDayDateParams, keys.SPORTRADAR_API_KEY);
 
@@ -31,7 +32,7 @@ module.exports = {
 },
 
   updatePrevDayGamesScore: async (keys, daysDiff) => {
-    const prevDayDateParams = calcDateParams(daysDiff);
+    const prevDayDateParams = dateUtils.calcDayParams(daysDiff); // calcDateParams(daysDiff);
     console.log(`Games update scores date: ${prevDayDateParams.day}-${prevDayDateParams.month}-${prevDayDateParams.year}`);
     let schedGamesData = await fetchGames(prevDayDateParams, keys.SPORTRADAR_API_KEY);
 
@@ -66,7 +67,7 @@ module.exports = {
 }
 
 function calcDateParams(dayDiff) {
-  const today = new Date();
+    const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + dayDiff);
     const dd = tomorrow.getDate();

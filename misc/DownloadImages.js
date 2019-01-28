@@ -7,8 +7,8 @@ const Team = mongoose.model("teams");
 const request = require('request');
 
 const teamLogoBaseUrl = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/scoreboard/@@@.png&h=###';
-const imageSize = 250;
-const downloadedImagePath = '/Users/greengo/Dev/js/projects/g-nets_batch/misc/teamLogos/';
+const imageSize = 80;
+const downloadedImagePath = '/Users/greengo/Dev/js/projects/g-nets_batch/resources/images/teamLogos/' + imageSize + '/';
 
 const downloadImage = function(teamName, callback){
     let fileName = downloadedImagePath + teamName + '-' + imageSize + '.png';
@@ -49,7 +49,7 @@ async function runProc() {
         { useNewUrlParser: true }
       );
 
-    const testTeam = {'name' : 'Cavaliers', 'alias' : 'cle'};
+    // const testTeam = {'name' : 'Cavaliers', 'alias' : 'cle'};
     for (team of teamsList) {
         downloadImage(team.alias, () => console.log(team.name + ' image downloaded'));
         // await updateTeamAlias(team);

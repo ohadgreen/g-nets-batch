@@ -36,7 +36,7 @@ module.exports = {
     }
   },
 
-  insertToDb: () => {
+/*   insertToDb: () => {
     // make a connection
     mongoose.connect(process.env.DB_CONN);
     const db = mongoose.connection;
@@ -68,5 +68,5 @@ module.exports = {
         );
       });
     });
-  }
+  } */
 };

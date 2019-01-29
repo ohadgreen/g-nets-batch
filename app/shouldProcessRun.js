@@ -12,7 +12,7 @@ module.exports = {
     const todayProcessRan = await ProcSched.find({ procDayString : todayString, runUpdate: true });
     console.log('todayProcessRan: ' + JSON.stringify(todayProcessRan));
 
-    if(!todayProcessRan) {
+    if(!todayProcessRan || todayProcessRan.length === 0) {
         return true;
     }
     else {

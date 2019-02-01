@@ -1,5 +1,5 @@
 // const cron = require("node-cron");
-// const schedTest = require('./app/scheduleTest');
+// const schedTest = require('./misc/ScheduleTest');
 const dateUtils = require('./app/utils/DateUtils');
 const shouldProcRun = require('./app/shouldProcessRun');
 const updateTeamStats = require('./app/updateTeamStats');
@@ -7,35 +7,41 @@ const gamesInfoUpdate = require('./app/insertNextScheduleGames');
 const keys = require("./config/keys");
 
 async function start() {    
-    // cron.schedule("*/10 * * * *", function() {
-    //     schedTest.asyncSaveTest(keys);
-    // })
-
     const todayObj = dateUtils.calcDayParams(0);
-    const todayString = `${todayObj.year}-${todayObj.month}-${todayObj.day}`;
+    const todayString = dateUtils.dateObjectToString(todayObj);
     console.log('todayString: ' + todayString);  
 
     const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
     console.log('should run: ' + shouldRun);
 
     if(shouldRun){
+        let runSuccessAll = false;
+        let updateTeamsStatsRes, gamesInsertRes, gamesUpdateRes;
         try {
             console.log('********** PROCESS START ***********');
             console.log('process.env: ' + process.env.NODE_ENV + ' Time: ' + new Date());
-            const updateTeamStatsInDb = await updateTeamStats.updateTeamStatsInDb(keys);
-            console.log('update team stats result: ' + updateTeamStatsInDb);
+            updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
+            console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
             await sleep(5000);
-            const nextDayGameUpdate = await gamesInfoUpdate.insertNextDayGames(keys, 1);
-            console.log('next day games insert result: ' + nextDayGameUpdate);
+            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(1);
+            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
             await sleep(5000);
-            const preDayGamesUpdate = await gamesInfoUpdate.updatePrevDayGamesScore(keys, -1);
-            console.log('prev day games update result: ' + preDayGamesUpdate);
+            gamesUpdateRes = await gamesInfoUpdate.updatePrevDayGamesScore(-1);
+            console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
             console.log('********** PROCESS COMPLETE ***********');
             
-            shouldProcRun.insertHourlySchedRecordExternal(keys, { procDayString: todayString, msg: 'ran successfully', runUpdate: true })
+            runSuccessAll = true;
         } catch (error) {
-            shouldProcRun.insertHourlySchedRecordExternal(keys, { procDayString: todayString, msg: 'run failure', runUpdate: false })
-        }
+            console.log('run error: ' + error);
+        }        
+            shouldProcRun.insertHourlySchedRecordExternal(keys, {
+                procDayString: todayString, 
+                runUpdate: runSuccessAll,
+                betsCalc: false,
+                teamStatsUpdate: updateTeamsStatsRes,
+                insertGamesResult: gamesInsertRes,
+                updateGamesResult: gamesUpdateRes
+          })
     }
 };
 start();

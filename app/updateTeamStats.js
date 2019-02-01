@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
+const fetchFromApi = require("./FetchFromApi");
+const keys = require("../config/keys");
 require("../model/Team");
 const Team = mongoose.model("teams");
 const YEAR = 2018;
@@ -9,16 +11,14 @@ const API_URL =
 
 module.exports = {
   updateTeamStatsInDb: async keys => {
-    let newTeamDataFromApi = await fetchTeamStatsFromApi(keys.SPORTRADAR_API_KEY);
+    let teamDataFromApi = await fetchTeamStatsFromApi();
+    let errorResults = [];
 
-    if (!newTeamDataFromApi) {
-      return "error fetching teams data";
+    if (!teamDataFromApi.success) {
+      errorResults.push(teamDataFromApi.errorMsg);
     }
     else {
-      const teamListUpdatedData = apiToDbTeamList(newTeamDataFromApi.conferences);
-      let errorResults = [];
-      let teamCount = 0;
-
+      const teamListUpdatedData = apiToDbTeamList(teamDataFromApi.apiData.conferences);      
       mongoose.connect(
         keys.MONGO_URI,
         { useNewUrlParser: true }
@@ -34,55 +34,24 @@ module.exports = {
               pointsFor: newTeamData.pointsFor,
               pointsAgainst: newTeamData.pointsAgainst,
               pointsDiff: newTeamData.pointsDiff,
-              gamesBehind: {
-                league: newTeamData.gamesBehind.league,
-                conference: newTeamData.gamesBehind.conference,
-                division: newTeamData.gamesBehind.division
-              }
+              gamesBehind: newTeamData.gamesBehind,
             }
           }
         );
-        if(updateRes.ok === 1){
-            teamCount++;
-        }
-        else {
-          errorResults.push({ teamName: newTeamData.name, result: updateRes })
-      }
-      }
-      if (errorResults.length === 0) {
-        return 'update complete for ' +teamCount + ' teams';
-      }
-      else {
-          return errorResults;
-      }
+        if(updateRes.ok !== 1){
+          errorResults.push(JSON.stringify(updateRes));
+        }        
+      }      
     }
+    return {success: (errorResults.length === 0), errorResults};
   }
 };
 
-  async function fetchTeamStatsFromApi(apiKey) {
-    try {
-      let scheduleGamesApiUrl = API_URL.replace("YEAR", YEAR).replace("SEASON_TYPE", SEASON_TYPE);
-        scheduleGamesApiUrl += "?api_key=" + apiKey;
-        const response = await axios({
-          url: scheduleGamesApiUrl,
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        });
-    
-        if (response.status === 200) {
-          return response.data;
-        } else {
-          console.log("cannot fetch team stats from api");
-          return null;
-        }
-    } catch (error) {
-      console.log('error fetching teams data ' + error.message);
-      return null;
-    }
-  };
+async function fetchTeamStatsFromApi() {
+  let teamStatsApiUrl = API_URL.replace("YEAR", YEAR).replace("SEASON_TYPE", SEASON_TYPE);
+  teamStatsApiUrl += "?api_key=" + keys.SPORTRADAR_API_KEY;  
+  return await fetchFromApi.fetchData(teamStatsApiUrl);
+}
 
   function apiToDbTeamList(apiData) {
     let confName, divisionName;
@@ -113,7 +82,7 @@ module.exports = {
       winPct: apiTeam.win_pct,
       pointsFor: apiTeam.points_for,
       pointsAgainst: apiTeam.points_against,
-      pointsDiff: apiTeam.points_diff,
+      pointsDiff: apiTeam.point_diff,
       gamesBehind: {
         league: apiTeam.games_behind.league,
         conference: apiTeam.games_behind.conference,

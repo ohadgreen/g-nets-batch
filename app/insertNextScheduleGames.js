@@ -1,181 +1,170 @@
 const mongoose = require("mongoose");
-mongoose.set('useFindAndModify', false);
-const axios = require("axios");
+mongoose.set("useFindAndModify", false);
+const fetchFromApi = require("./FetchFromApi");
 require("../model/Team");
 require("../model/Game");
-const dateUtils = require('./utils/DateUtils');
+const dateUtils = require("./utils/DateUtils");
+const keys = require("../config/keys");
 const Team = mongoose.model("teams");
 const Game = mongoose.model("games");
 const API_URL =
   "http://api.sportradar.us/nba/trial/v5/en/games/YEAR/MONTH/DAY/schedule.json";
-const GAMES_FETCH_LIMIT = 2;
 
 module.exports = {
-  insertNextDayGames: async (keys, daysDiff) => {
-    const nextDayDateParams = dateUtils.calcDayParams(daysDiff); //calcDateParams(daysDiff);
-    console.log(`Games insert date: ${nextDayDateParams.day}-${nextDayDateParams.month}-${nextDayDateParams.year}`);
-    let schedGamesData = await fetchGames(nextDayDateParams, keys.SPORTRADAR_API_KEY);
-
-    if (!schedGamesData) {
-      return "error fetching games for insert";
+  insertNextDayGames: async (daysDiff) => {
+    let success = false;
+    let errorMsg;
+    let insertedGameList = [];
+    // 1. calculate date
+    const insertGamesDayObject = dateUtils.calcDayParams(daysDiff);
+    const insertGamesDayString = dateUtils.dateObjectToString(insertGamesDayObject);
+    // 2. fetch game list from api
+    let schedGamesData = await fetchScheduleGamesFromApi(insertGamesDayObject);
+    if (!schedGamesData.success) {
+      errorMsg = schedGamesData.errorMsg;
     } else {
-      mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
-      const dbGamesList = await apiGamesListToDbGamesList(schedGamesData.games, GAMES_FETCH_LIMIT);
-      const dbSaveRes = await insertGamesBatchToDb(dbGamesList);
-      if(dbSaveRes.status === 0){
-        return "next day games saved";
+      mongoose.connect(
+        keys.MONGO_URI,
+        { useNewUrlParser: true }
+      );
+      // 3. for each game find team id, calculate importance rank and transfer to db object
+      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games);
+      if (dbGamesList.error){
+        errorMsg = dbGamesList.error;
       }
-      else{
-        return dbSaveRes.error;
+      else {
+        const dbSaveRes = await insertGamesBatchToDb(dbGamesList);
+        console.log('dbSaveRes: ' + JSON.stringify(dbSaveRes));
+        success = dbSaveRes.success;
+        errorMsg = dbSaveRes.errorMsg;
+        insertedGameList = dbSaveRes.insertedGameSrId;
       }
     }
-},
-
-  updatePrevDayGamesScore: async (keys, daysDiff) => {
-    const prevDayDateParams = dateUtils.calcDayParams(daysDiff); // calcDateParams(daysDiff);
-    console.log(`Games update scores date: ${prevDayDateParams.day}-${prevDayDateParams.month}-${prevDayDateParams.year}`);
-    let schedGamesData = await fetchGames(prevDayDateParams, keys.SPORTRADAR_API_KEY);
-
-    if (!schedGamesData) {
-      return "error fetching games for update";
-    } else {
-      await mongoose.connect(keys.MONGO_URI, { useNewUrlParser: true });
-      const dbGamesList = await apiGamesListToDbGamesList(schedGamesData.games, 100);
-      let updateErrorAggregation;
-      let status = 0;
-      let updateCount = 0;
-
-      for (game of dbGamesList) {        
-        const updateRes = await updateGameScores(game);
-        if(updateRes.status === 0) {
-          console.log(`** ${updateCount+1}. ${updateRes.updatedGame.srId} ${updateRes.updatedGame._id}`);
-          updateCount++;
-        }
-        if(updateRes.status === -2){
-          status = -2;
-          updateErrorAggregation += ' ' + updateRes.error;
-        }
-      }
-      if(status === 0){
-        return "day games scores updated";
-      }
-      else{
-        return updateErrorAggregation;
-      }
-    }
+    return { success, errorMsg, dateString: insertGamesDayString, gameList: insertedGameList }
   },
-}
 
-function calcDateParams(dayDiff) {
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + dayDiff);
-    const dd = tomorrow.getDate();
-    const day = (dd < 10) ? '0' + dd : dd;
-    const mm = tomorrow.getMonth() + 1; //January is 0!
-    const month = (mm < 10) ? '0' + mm : mm;
-    const yyyy = tomorrow.getFullYear();
-    return { day: day, month: month ,year: yyyy };
-}
+  updatePrevDayGamesScore: async (daysDiff) => {
+    let errorMsg = '';
+    let updatedGameList = [];
+    const updateGamesDayObject = dateUtils.calcDayParams(daysDiff);
+    const updateGamesDayString = dateUtils.dateObjectToString(updateGamesDayObject);
+    console.log(`Games update scores date: ${updateGamesDayString}`);
+    let schedGamesData = await fetchScheduleGamesFromApi(updateGamesDayObject);
 
-async function fetchGames(date, apiKey) {
+    if (!schedGamesData.success) {
+      errorMsg = schedGamesData.errorMsg;
+    } else {
+      mongoose.connect(
+        keys.MONGO_URI,
+        { useNewUrlParser: true }
+      );
+      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games);
+      let errorCount = 0;
+
+      for (game of dbGamesList) {
+        const updateRes = await updateGameScores(game);
+        if (updateRes.success) {
+          updatedGameList.push(updateRes.updatedGameSrId);          
+        }
+        else{
+          errorMsg += updateRes.errorMsg;
+          errorCount++;
+        }
+      }
+    }
+    return { success: (errorMsg === '' && errorCount === 0), errorMsg, dateString: updateGamesDayString, gameList: updatedGameList };
+  }
+};
+
+async function fetchScheduleGamesFromApi(date) {
   const { day, month, year } = date;
-  let scheduleGamesApiUrl = API_URL
-    .replace("YEAR", year)
+  let scheduleGamesApiUrl = API_URL.replace("YEAR", year)
     .replace("MONTH", month)
     .replace("DAY", day);
-  scheduleGamesApiUrl += "?api_key=" + apiKey;
-  try {
-    const response = await axios({
-      url: scheduleGamesApiUrl,
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      console.log("cannot fetch games sched from api");
-      return null;
-    }
-  } catch (error) {
-    console.log('error fetching games data ' + error.message);
-    return null;
-  }
+  scheduleGamesApiUrl += "?api_key=" + keys.SPORTRADAR_API_KEY;
+  return await fetchFromApi.fetchData(scheduleGamesApiUrl);
 }
 
 async function fetchTeamStats() {
   try {
-      const dbTeamList = await Team.find({}).select('srId');
-      if(dbTeamList) {
-        return dbTeamList;
-      }
-      else {
-        return { error: 'teams not found in db'}
-      }
-    } catch (error) {
-      return { error };
+    const dbTeamList = await Team.find({}).select("srId gamesBehind.league");
+    if (dbTeamList) {
+      return dbTeamList;
+    } else {
+      return { error: "teams not found in db" };
     }
+  } catch (error) {
+    return { error };
+  }
 }
 
 async function insertGamesBatchToDb(gamesList) {
-  try {
-      const saveGamesRes = await Game.create(gamesList);
-      if (saveGamesRes) {
-        saveGamesRes.map((game, i) => { console.log(`** ${i+1}. ${game.srId} ${game._id}`); })
-        return { status: 0 };
-      }
-      else {
-        return { status: -1, error: 'unknown server error' };
-      }
-    } catch (error) {
-      console.log(`error.code: ${error.code} error.name: ${error.name} ` );
-      return { status: -1, error: error.name };
+  try {    
+    const saveGamesRes = await Game.create(gamesList);    
+    if (saveGamesRes) {
+      let insertedGameSrId = [];
+      saveGamesRes.map((game) => insertedGameSrId.push(game.srId));
+      return { success: true, errorMsg: null, insertedGameSrId };
+    } else {
+      return { success: false, errorMsg: 'unknown server error', insertedGameSrId: [] };
     }
+  } catch (error) {
+    console.log(`error.code: ${error.code} error.name: ${error.name} `);
+    return { success: false, errorMsg: error.name, insertedGameSrId: [] };
+  }
 }
 
 async function updateGameScores(game) {
   try {
-    const gameUpdateRes = await Game.findOneAndUpdate({ srId: game.srId }, { $set: { results: game.results } }, { new: true });
+    const gameUpdateRes = await Game.findOneAndUpdate(
+      { srId: game.srId },
+      { $set: { results: game.results } },
+      { new: true }
+    );
     if (gameUpdateRes) {
-      return { status: 0, updatedGame: {"_id": gameUpdateRes._id, "srId": gameUpdateRes.srId} };
-    }
-    else {
-      return { status: -1, error: 'game not found' };
+      return { success: true, updatedGameSrId: gameUpdateRes.srId };
+    } else {
+      return { success: false, errorMsg: `${game.srId}-not found ` };
     }
   } catch (error) {
-    console.log(`error.code: ${error.code} error.name: ${error.name}` );
-      return { status: -2, error: error.name };
+    return { success: false, errorMsg: `${game.srId}-${error.name} ` };
   }
 }
 
-async function apiGamesListToDbGamesList(apiGamesSched, gameCountLimit) {
-  let dbGamesList = [];
-  let gamesCount = 0;
-  const dbTeamList = await fetchTeamStats();
-
-  for (game of apiGamesSched) {
-    if (gamesCount < gameCountLimit) {
-      let homeTeamDbId, awayTeamDbId;
-      for (team of dbTeamList) {
-        if (game.home.sr_id === team.srId){
+async function apiGamesListToDbGamesList(apiGamesSched) {
+  try {
+    let dbGamesList = [];
+    const dbTeamList = await fetchTeamStats();
+    
+    for (game of apiGamesSched) {
+      let homeTeamDbId, awayTeamDbId, homeTeamBehindLeague, awayTeamBehindLeague;
+      for (team of dbTeamList) { // fill home and away teams info
+        if (game.home.sr_id === team.srId) {
           homeTeamDbId = team._id;
-        };
-        if (game.away.sr_id === team.srId){
+          homeTeamBehindLeague = team.gamesBehind.league;
+        }
+        if (game.away.sr_id === team.srId) {
           awayTeamDbId = team._id;
+          awayTeamBehindLeague = team.gamesBehind.league;
         }
       }
-      const dbGame = gameConvertApiToDb(game, homeTeamDbId, awayTeamDbId);
-      dbGamesList.push(dbGame);
-      gamesCount++; 
+      game['homeTeamDbId'] = homeTeamDbId;
+      game['awayTeamDbId'] = awayTeamDbId;
+      game['totalBehindLeague'] = homeTeamBehindLeague + awayTeamBehindLeague;
     }
+  
+    addImportanceRankToGameList(apiGamesSched);
+    for (game of apiGamesSched) {
+       let dbGame = gameConvertApiToDb(game);
+       dbGamesList.push(dbGame);
+    }
+    return dbGamesList;    
+  } catch (error) {
+    return {error};
   }
-  return dbGamesList;
 }
 
-function gameConvertApiToDb(apiGameData, homeTeamDbId, awayTeamDbId) {
+function gameConvertApiToDb(apiGameData) {
   const homePoints = apiGameData.home_points ? apiGameData.home_points : 0;
   const awayPoints = apiGameData.away_points ? apiGameData.away_points : 0;
 
@@ -183,9 +172,30 @@ function gameConvertApiToDb(apiGameData, homeTeamDbId, awayTeamDbId) {
     srId: apiGameData.sr_id,
     srIdLong: apiGameData.id,
     schedule: apiGameData.scheduled,
-    homeTeam: homeTeamDbId,
-    awayTeam: awayTeamDbId,
+    homeTeam: apiGameData.homeTeamDbId,
+    awayTeam: apiGameData.awayTeamDbId,
+    gameRank: {
+      totalBehindLeague: apiGameData.totalBehindLeague, gameRank: apiGameData.gameRank
+    },
     results: { homePoints, awayPoints }
   });
   return game;
+}
+
+function addImportanceRankToGameList(games) {
+  const length = games.length;
+  //Number of passes
+  for (let i = 0; i < length; i++) {
+    for (let j = 0; j < length - i - 1; j++) {
+      if (games[j].totalBehindLeague > games[j + 1].totalBehindLeague) {
+        const tmp = games[j];
+        games[j] = games[j + 1];
+        games[j + 1] = tmp;
+      }
+    }
+  }
+  for (let i = 0; i < length; i++){
+      games[i]['gameRank'] = i + 1;
+  }
+  return games;
 }

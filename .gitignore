@@ -2,6 +2,7 @@
 # env
 .env
 /config/dev.js
+.vscode/
 
 # dependencies
 node_modules/

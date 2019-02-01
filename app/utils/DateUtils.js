@@ -9,5 +9,14 @@ module.exports = {
     const month = mm < 10 ? "0" + mm : mm;
     const year = tomorrow.getFullYear();
     return { day, month, year };
+  },
+
+  dateObjectToString: dayObj => {
+    if(dayObj.year && dayObj.month && dayObj.day) {
+      return `${dayObj.year}-${dayObj.month}-${dayObj.day}`;
+    }
+    else {
+      return 'yyyy-mm-dd';
+    }
   }
 };

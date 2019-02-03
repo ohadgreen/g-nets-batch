@@ -7,7 +7,7 @@ const dateUtils = require("./utils/DateUtils");
 const keys = require("../config/keys");
 const Team = mongoose.model("teams");
 const Game = mongoose.model("games");
-const API_URL =
+const API_URL = 
   "http://api.sportradar.us/nba/trial/v5/en/games/YEAR/MONTH/DAY/schedule.json";
 
 module.exports = {
@@ -28,7 +28,7 @@ module.exports = {
         { useNewUrlParser: true }
       );
       // 3. for each game find team id, calculate importance rank and transfer to db object
-      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games);
+      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games, true, false);
       if (dbGamesList.error){
         errorMsg = dbGamesList.error;
       }
@@ -45,6 +45,7 @@ module.exports = {
 
   updatePrevDayGamesScore: async (daysDiff) => {
     let errorMsg = '';
+    let errorCount = 0;
     let updatedGameList = [];
     const updateGamesDayObject = dateUtils.calcDayParams(daysDiff);
     const updateGamesDayString = dateUtils.dateObjectToString(updateGamesDayObject);
@@ -58,8 +59,13 @@ module.exports = {
         keys.MONGO_URI,
         { useNewUrlParser: true }
       );
-      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games);
-      let errorCount = 0;
+      let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games, false, true);
+      // update prev recent games to archive
+      const setRecentArchive = await Game.updateMany({ isRecentGame: true },{ $set: { isRecentGame : false, isArchiveGame: true } })
+      if(setRecentArchive && setInterval.ok !== 1 ){
+        console.log('setRecentArch: ' + JSON.stringify(setRecentArchive));
+        errorMsg = 'error update recent to archive';
+      }
 
       for (game of dbGamesList) {
         const updateRes = await updateGameScores(game);
@@ -118,7 +124,7 @@ async function updateGameScores(game) {
   try {
     const gameUpdateRes = await Game.findOneAndUpdate(
       { srId: game.srId },
-      { $set: { results: game.results } },
+      { $set: { results: game.results, isNewGame: false, isRecentGame: true } },
       { new: true }
     );
     if (gameUpdateRes) {
@@ -131,7 +137,7 @@ async function updateGameScores(game) {
   }
 }
 
-async function apiGamesListToDbGamesList(apiGamesSched) {
+async function apiGamesListToDbGamesList(apiGamesSched, isNew, isRecent) {
   try {
     let dbGamesList = [];
     const dbTeamList = await fetchTeamStats();
@@ -155,7 +161,7 @@ async function apiGamesListToDbGamesList(apiGamesSched) {
   
     addImportanceRankToGameList(apiGamesSched);
     for (game of apiGamesSched) {
-       let dbGame = gameConvertApiToDb(game);
+       let dbGame = gameConvertApiToDb(game, isNew, isRecent);
        dbGamesList.push(dbGame);
     }
     return dbGamesList;    
@@ -164,7 +170,7 @@ async function apiGamesListToDbGamesList(apiGamesSched) {
   }
 }
 
-function gameConvertApiToDb(apiGameData) {
+function gameConvertApiToDb(apiGameData, isNew, isRecent) {
   const homePoints = apiGameData.home_points ? apiGameData.home_points : 0;
   const awayPoints = apiGameData.away_points ? apiGameData.away_points : 0;
 
@@ -172,6 +178,9 @@ function gameConvertApiToDb(apiGameData) {
     srId: apiGameData.sr_id,
     srIdLong: apiGameData.id,
     schedule: apiGameData.scheduled,
+    isNewGame: isNew,
+    isRecentGame: isRecent,
+    isArchiveGame: false,
     homeTeam: apiGameData.homeTeamDbId,
     awayTeam: apiGameData.awayTeamDbId,
     gameRank: {

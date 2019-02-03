@@ -1,5 +1,4 @@
 // const cron = require("node-cron");
-// const schedTest = require('./misc/ScheduleTest');
 const dateUtils = require('./app/utils/DateUtils');
 const shouldProcRun = require('./app/shouldProcessRun');
 const updateTeamStats = require('./app/updateTeamStats');
@@ -20,14 +19,18 @@ async function start() {
         try {
             console.log('********** PROCESS START ***********');
             console.log('process.env: ' + process.env.NODE_ENV + ' Time: ' + new Date());
+
             updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
             console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
             await sleep(5000);
-            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(1);
-            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
-            await sleep(5000);
+            
             gamesUpdateRes = await gamesInfoUpdate.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
+            await sleep(5000);
+
+            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
+            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
+           
             console.log('********** PROCESS COMPLETE ***********');
             
             runSuccessAll = true;
@@ -35,13 +38,23 @@ async function start() {
             console.log('run error: ' + error);
         }        
             shouldProcRun.insertHourlySchedRecordExternal(keys, {
-                procDayString: todayString, 
+                runDateString: todayString, 
                 runUpdate: runSuccessAll,
                 betsCalc: false,
                 teamStatsUpdate: updateTeamsStatsRes,
                 insertGamesResult: gamesInsertRes,
                 updateGamesResult: gamesUpdateRes
           })
+    }
+    else {
+        shouldProcRun.insertHourlySchedRecordExternal(keys, {
+            runDateString: todayString, 
+            runUpdate: false,
+            betsCalc: false,
+            teamStatsUpdate: null,
+            insertGamesResult: null,
+            updateGamesResult: null
+      })
     }
 };
 start();

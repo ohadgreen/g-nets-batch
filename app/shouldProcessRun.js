@@ -8,7 +8,7 @@ module.exports = {
         keys.MONGO_URI,
         { useNewUrlParser: true }
       );
-    const todayProcessRan = await ProcessTrack.find({ procDayString : todayString, runUpdate: true });
+    const todayProcessRan = await ProcessTrack.find({ runDateString : todayString, runUpdate: true });
     if(!todayProcessRan || todayProcessRan.length === 0) {
         return true;
     }
@@ -38,7 +38,7 @@ async function insertHourlySchedRecord (keys, hourlyRec) {
 
       const hourlySched = new ProcessTrack({
         runDate: new Date(),
-        runDateString: hourlyRec.procDayString,
+        runDateString: hourlyRec.runDateString,
         runUpdate: hourlyRec.runUpdate,
         betsCalc: hourlyRec.betsCalc,
         teamStatsUpdate: hourlyRec.teamStatsUpdate,

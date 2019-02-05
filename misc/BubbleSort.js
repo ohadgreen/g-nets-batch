@@ -27,5 +27,14 @@ const games = [
   { id: 4, totalBehind: 5.5, rank: undefined },
   { id: 5, totalBehind: 6.5, rank: undefined }
 ];
-bubbleSort(games);
-console.log(games);
+// bubbleSort(games);
+// console.log(games);
+
+
+function getHour() {
+  const today = new Date();
+  const hour = new Date().getHours();
+  console.log('hour: ' + today.getHours() + ' ' + hour);
+};
+
+getHour();

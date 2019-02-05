@@ -6,13 +6,14 @@ const mongoose = require("mongoose");
 const Team = mongoose.model("teams");
 const request = require('request');
 
-const teamLogoBaseUrl = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/scoreboard/@@@.png&h=###';
-const imageSize = 50;
+// const teamLogoBaseUrl = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/scoreboard/@@@.png&h=###';
+const teamLogoBaseUrl = 'https://neulionms-a.akamaihd.net/nba/player/v3/nba/site/images/teams/@@@_p.png';
+const imageSize = 70;
 const downloadedImagePath = '/Users/greengo/Dev/js/projects/g-nets_batch/resources/images/teamLogos/' + imageSize + '/';
 
 const downloadImage = function(teamName, callback){
     let fileName = downloadedImagePath + teamName + '-' + imageSize + '.png';
-    let imageUri = teamLogoBaseUrl.replace('@@@', teamName).replace('###', imageSize);
+    let imageUri = teamLogoBaseUrl.replace('@@@', teamName.toUpperCase()); //.replace('###', imageSize);
     console.log('imageUri: ' + imageUri);
   request.head(imageUri, function(err, res, body) {
     console.log('content-type:', res.headers['content-type']);

@@ -62,18 +62,19 @@ module.exports = {
       let dbGamesList = await apiGamesListToDbGamesList(schedGamesData.apiData.games, false, true);
       // update prev recent games to archive
       const setRecentArchive = await Game.updateMany({ isRecentGame: true },{ $set: { isRecentGame : false, isArchiveGame: true } })
-      if(setRecentArchive && setInterval.ok !== 1 ){
+      if(setRecentArchive && setRecentArchive.ok !== 1 ){
         console.log('setRecentArch: ' + JSON.stringify(setRecentArchive));
         errorMsg = 'error update recent to archive';
       }
 
       for (game of dbGamesList) {
         const updateRes = await updateGameScores(game);
-        if (updateRes.success) {
+        const updateBetScoreRes = await calculateBetScore(game);
+        if (updateRes.success && updateBetScoreRes.success) {
           updatedGameList.push(updateRes.updatedGameSrId);          
         }
         else{
-          errorMsg += updateRes.errorMsg;
+          errorMsg += updateRes.errorMsg + updateBetScoreRes.errorMsg;
           errorCount++;
         }
       }
@@ -132,6 +133,39 @@ async function updateGameScores(game) {
     } else {
       return { success: false, errorMsg: `${game.srId}-not found ` };
     }
+  } catch (error) {
+    return { success: false, errorMsg: `${game.srId}-${error.name} ` };
+  }
+}
+
+async function calculateBetScore(game) {
+  try {
+    await Game.findOne({ srId: game.srId })
+    .exec(function (err, game) {
+      if(err) {
+          console.log(err);
+          return { success: false, errorMsg: `${game.srId}-${err.name} ` };;
+      }
+      const actualWinner = (game.results.homePoints > game.results.awayPoints)? "homeTeam" : "awayTeam";
+      const actualPointsDiff = Math.abs(game.results.homePoints - game.results.awayPoints);
+      game.bets.forEach(bet => {
+          if(bet.winner === actualWinner){ 
+            const pointsDiffGap = Math.abs(bet.pointsDiff - actualPointsDiff);
+            if(pointsDiffGap === 0){ // exact match
+              bet.score = 15;
+            }
+            if(pointsDiffGap <= 10){
+                bet.score = 13 - pointsDiffGap;
+            }
+            else{
+                bet.score = 2;
+            }
+        }            
+      });
+      game.save();
+  })
+  return { success: true };
+
   } catch (error) {
     return { success: false, errorMsg: `${game.srId}-${error.name} ` };
   }

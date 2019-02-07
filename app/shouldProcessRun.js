@@ -6,7 +6,7 @@ module.exports = {
   // process should run only after 8am, then check if it didn't aleardy ran today
   checkLastRunDay: async (keys, todayString) => {     
     const hour = new Date().getHours();
-    if(hour > 6){
+    if(hour >= 6){
       mongoose.connect(keys.MONGO_URI,{ useNewUrlParser: true });
   
       const todayProcessRan = await ProcessTrack.find({ runDateString : todayString, runUpdate: true });

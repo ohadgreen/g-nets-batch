@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const axios = require("axios");
 const fetchFromApi = require("./FetchFromApi");
+const convertApiTeamToDbTeam = require("../app/converters/TeamApiToDb");
 const keys = require("../config/keys");
 require("../model/Team");
 const Team = mongoose.model("teams");
@@ -62,7 +62,8 @@ async function fetchTeamStatsFromApi() {
         divisionName = division.name;
         for (team of division.teams) {
           dbTeamsList.push(
-            convertApiTeamToDbTeam(team, confName, divisionName)
+            // convertApiTeamToDbTeam(team, confName, divisionName)
+            convertApiTeamToDbTeam.convert(team, confName, divisionName)
           );
         }
       }
@@ -70,7 +71,7 @@ async function fetchTeamStatsFromApi() {
     return dbTeamsList;
   };
 
-  function convertApiTeamToDbTeam (apiTeam, confName, divisionName) {
+/*   function convertApiTeamToDbTeam (apiTeam, confName, divisionName) {
     let team = new Team({
       srId: apiTeam.sr_id,
       city: apiTeam.market,
@@ -90,4 +91,4 @@ async function fetchTeamStatsFromApi() {
       }
     });
     return team;
-  };
+  }; */

@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 mongoose.set("useFindAndModify", false);
-require("../model/Team");
-require("../model/Game");
-require("../model/User");
-const dateUtils = require("./utils/DateUtils");
-const fetchGamesFromApi = require("./fetchFromApi/FetchGames");
-const gamesListApiToDb = require("./converters/GamesListApiToDb");
-const keys = require("../config/keys");
+require("../../model/Team");
+require("../../model/Game");
+require("../../model/User");
+const dateUtils = require("../utils/DateUtils");
+const fetchGamesFromApi = require("../fetchFromApi/FetchGames");
+const gamesListApiToDb = require("../converters/GamesListApiToDb");
+const keys = require("../../config/keys");
 const Game = mongoose.model("games");
 const User = mongoose.model("users");
 

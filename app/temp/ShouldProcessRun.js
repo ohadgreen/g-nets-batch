@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-require("../model/DailyTrack");
+require("../../model/DailyTrack");
 const ProcessTrack = mongoose.model("dailytrack");
 
 module.exports = {

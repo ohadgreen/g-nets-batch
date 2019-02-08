@@ -1,10 +1,10 @@
 // const cron = require("node-cron");
 const dateUtils = require('./app/utils/DateUtils');
 // will it recognize?
-const shouldProcRun = require('./app/ShouldProcessRun');
-const updateTeamStats = require('./app/UpdateTeamStats');
-const updateRecentGameResults = require('./app/UpdateRecentGamesResultsAndBets');
-const gamesInfoUpdate = require('./app/InsertNextScheduleGames');
+const shouldProcRun = require('./app/temp/ShouldProcessRun');
+const updateTeamStats = require('./app/temp/UpdateTeamStats');
+const updateRecentGameResults = require('./app/temp/UpdateRecentGamesResultsAndBets');
+const gamesInfoUpdate = require('./app/temp/InsertNextScheduleGames');
 const keys = require("./config/keys");
 
 async function start() {    

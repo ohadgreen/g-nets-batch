@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const fetchFromApi = require("./fetchFromApi/FetchFromApi");
-const convertApiTeamToDbTeam = require("../app/converters/TeamApiToDb");
+const convertApiTeamToDbTeam = require("./converters/TeamApiToDb");
 const keys = require("../config/keys");
 require("../model/Team");
 const Team = mongoose.model("teams");

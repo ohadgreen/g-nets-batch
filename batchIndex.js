@@ -1,7 +1,7 @@
 // const cron = require("node-cron");
 const dateUtils = require('./app/utils/DateUtils');
-const shouldProcRun = require('./app/shouldProcessRun');
-const updateTeamStats = require('./app/updateTeamStats');
+const shouldProcRun = require('./app/ShouldProcessRun');
+const updateTeamStats = require('./app/UpdateTeamStats');
 const updateRecentGameResults = require('./app/UpdateRecentGamesResultsAndBets');
 const gamesInfoUpdate = require('./app/InsertNextScheduleGames');
 const keys = require("./config/keys");

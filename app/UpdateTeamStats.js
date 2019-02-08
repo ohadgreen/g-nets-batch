@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const fetchFromApi = require("../fetchFromApi/FetchFromApi");
-const convertApiTeamToDbTeam = require("../converters/TeamApiToDb");
-const keys = require("../../config/keys");
-require("../../model/Team");
+const fetchFromApi = require("./fetchFromApi/FetchFromApi");
+const convertApiTeamToDbTeam = require("./converters/TeamApiToDb");
+const keys = require("../config/keys");
+require("../model/Team");
 const Team = mongoose.model("teams");
 const YEAR = 2018;
 const SEASON_TYPE = "REG";

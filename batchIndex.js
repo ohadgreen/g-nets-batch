@@ -12,7 +12,7 @@ async function start() {
     const todayString = dateUtils.dateObjectToString(todayObj);
     console.log('todayString: ' + todayString);  
 
-    const shouldRun = true //await shouldProcRun.checkLastRunDay(keys, todayString);
+    const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
     console.log('should run: ' + shouldRun);
 
     if(shouldRun){
@@ -22,16 +22,16 @@ async function start() {
             console.log('********** PROCESS START ***********');
             console.log('process.env: ' + process.env.NODE_ENV + ' Time: ' + new Date());
 
-            // updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
-            // console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
-            // await sleep(5000);
+            updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
+            console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
+            await sleep(5000);
             
             gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
             await sleep(5000);
 
-            // gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
-            // console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
+            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
+            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
            
             console.log('********** PROCESS COMPLETE ***********');
             

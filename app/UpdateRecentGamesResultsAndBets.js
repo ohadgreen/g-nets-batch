@@ -15,6 +15,7 @@ module.exports = {
     let errorMsg = "";
     let errorCount = 0;
     let updatedGameList = [];
+    let totalBetsCalcSuccess = true;
     // 1. calculate date
     const updateGamesDayObject = dateUtils.calcDayParams(daysDiff);
     const updateGamesDayString = dateUtils.dateObjectToString(
@@ -47,7 +48,7 @@ module.exports = {
         console.log("setRecentArch: " + JSON.stringify(setRecentArchive));
         errorMsg = "error update recent to archive";
       }
-      const totalBetsCalcSuccess = true;
+      
       for (game of dbGamesList) {
         // 5. update game results
         const updateRes = await updateGameScores(game);
@@ -105,8 +106,8 @@ async function calculateBetScore(game) {
       const actualPointsDiff = Math.abs(
         game.results.homePoints - game.results.awayPoints
       );
-      let betScore = 0;
       game.bets.forEach(bet => {
+        let betScore = 0;
         // calculate bet score:
         // exact match = 15, within 10 points diff range => 13 - points range
         // more than 10 points range = 2
@@ -123,6 +124,7 @@ async function calculateBetScore(game) {
           }
         }
         bet.score = betScore;
+        // console.log(`winner: ${bet.winner} | bet: ${bet.betString} | score: ${betScore}`);
 
         // update the users table with recent bet score
         User.findOne({ _id: mongoose.Types.ObjectId(bet.user) }, function(

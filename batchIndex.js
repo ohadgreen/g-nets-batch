@@ -26,12 +26,12 @@ async function start() {
             // console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
             // await sleep(5000);
             
-            // gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
-            // console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
-            // await sleep(5000);
+            gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
+            console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
+            await sleep(5000);
 
-            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
-            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
+            // gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
+            // console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
            
             console.log('********** PROCESS COMPLETE ***********');
             

@@ -6,6 +6,7 @@ require("../model/User");
 const dateUtils = require("./utils/DateUtils");
 const fetchGamesFromApi = require("./fetchFromApi/FetchGames");
 const gamesListApiToDb = require("./converters/GamesListApiToDb");
+const callContract = require("../eth/contractInteraction");
 const keys = require("../config/keys");
 const Game = mongoose.model("games");
 const User = mongoose.model("users");
@@ -16,6 +17,7 @@ module.exports = {
     let errorCount = 0;
     let updatedGameList = [];
     let totalBetsCalcSuccess = true;
+    let prizeDistRes = '';
     // 1. calculate date
     const updateGamesDayObject = dateUtils.calcDayParams(daysDiff);
     const updateGamesDayString = dateUtils.dateObjectToString(
@@ -39,7 +41,7 @@ module.exports = {
         false,
         true
       );
-      // 4. update prev recent games to archive
+      // 4. update prev recent games to archive:true
       const setRecentArchive = await Game.updateMany(
         { isRecentGame: true },
         { $set: { isRecentGame: false, isArchiveGame: true } }
@@ -47,14 +49,23 @@ module.exports = {
       if (setRecentArchive && setRecentArchive.ok !== 1) {
         console.log("setRecentArch: " + JSON.stringify(setRecentArchive));
         errorMsg = "error update recent to archive";
-      }
-      
+      }      
       for (game of dbGamesList) {
         // 5. update game results
         const updateRes = await updateGameScores(game);
         // 6. update bet scores for each user
         const updateBetScoreRes = await calculateBetScore(game);
-        if (updateRes.success && updateBetScoreRes.success) {
+        if (updateRes.success && updateBetScoreRes.success) {          
+          if (updateBetScoreRes.prizeWinnerCodeList.length > 0){
+            const contractTxn = await callContract.distributePrizeToWinners(updateBetScoreRes.prizeWinnerCodeList);
+            if(contractTxn.blockHash)
+              prizeDistRes = 'success';
+            else
+              prizeDistRes = 'failed';
+          }
+          else
+            prizeDistRes = 'none';
+
           updatedGameList.push(updateRes.updatedGameSrId);
         } 
         if (!updateBetScoreRes.success) {
@@ -69,6 +80,7 @@ module.exports = {
       success: errorMsg === "" && errorCount === 0,
       errorMsg,
       betsCalc: totalBetsCalcSuccess,
+      prizeDistribution: prizeDistRes,
       dateString: updateGamesDayString,
       gameList: updatedGameList
     };
@@ -83,7 +95,7 @@ async function updateGameScores(game) {
       { new: true }
     );
     if (gameUpdateRes) {
-      return { success: true, updatedGameSrId: gameUpdateRes.srId };
+      return { success: true, updatedGameSrId: gameUpdateRes.srId, errorMsg: null };
     } else {
       return { success: false, errorMsg: `${game.srId}-not found ` };
     }
@@ -93,8 +105,11 @@ async function updateGameScores(game) {
 }
 
 async function calculateBetScore(game) {
+  let prizeWinnerCodeList = [];
+  console.log('game srId: ' + game.srId);
   try {
     await Game.findOne({ srId: game.srId }).exec(function(err, game) {
+      console.log('db game ' + game.srId);
       if (err) {
         console.log(err);
         return { success: false, errorMsg: `${game.srId}-${err.name} ` };
@@ -104,8 +119,7 @@ async function calculateBetScore(game) {
           ? "homeTeam"
           : "awayTeam";
       const actualPointsDiff = Math.abs(game.results.homePoints - game.results.awayPoints);
-
-      let prizeWinnerCodeList = [];
+      
       let prizeWinnerScore = 0;
       game.bets.forEach(bet => {
         let betScore = 0;
@@ -149,7 +163,7 @@ async function calculateBetScore(game) {
           user.save();
 
            // ether prize calc
-          if(bet.ether > 0){
+          /* if(bet.ether > 0){
             // equal score => add user to prize winners list
             if(betScore === prizeWinnerScore){
               prizeWinnerCodeList.push(user.intcode);
@@ -160,14 +174,15 @@ async function calculateBetScore(game) {
               prizeWinnerCodeList.push(user.intcode);
               prizeWinnerScore = betScore;
             }
-          }
+          } */
         });
       });
       game.save();
     });
     console.log('prizeWinnerCodeList: ' + prizeWinnerCodeList);
-    return { success: true, prizeWinnerCodeList };
+    return { success: true, prizeWinnerCodeList, errorMsg: null };
   } catch (error) {
+    console.log('catch clause');
     return { success: false, errorMsg: `${game.srId}-${error.name} ` };
   }
 }

@@ -103,9 +103,10 @@ async function calculateBetScore(game) {
         game.results.homePoints > game.results.awayPoints
           ? "homeTeam"
           : "awayTeam";
-      const actualPointsDiff = Math.abs(
-        game.results.homePoints - game.results.awayPoints
-      );
+      const actualPointsDiff = Math.abs(game.results.homePoints - game.results.awayPoints);
+
+      let prizeWinnerCodeList = [];
+      let prizeWinnerScore = 0;
       game.bets.forEach(bet => {
         let betScore = 0;
         // calculate bet score:
@@ -144,15 +145,28 @@ async function calculateBetScore(game) {
           user.bets.totalBets = totalBets;
           user.bets.totalScore = totalScore;
           user.bets.avgScore = totalScore / totalBets;
-          // console.log(
-          //   `user: ${user.username} totalBets: ${totalBets}, oldTotal: ${user.bets.totalScore}, newTotal: ${totalScore}, newAvgScore: ${totalScore/totalBets}`
-          // );
+          // console.log(`user: ${user.username} totalBets: ${totalBets}, oldTotal: ${user.bets.totalScore}, newTotal: ${totalScore}, newAvgScore: ${totalScore/totalBets}`);
           user.save();
+
+           // ether prize calc
+          if(bet.ether > 0){
+            // equal score => add user to prize winners list
+            if(betScore === prizeWinnerScore){
+              prizeWinnerCodeList.push(user.intcode);
+            }
+            // higher score => empty current list, add new user, update prizeScore
+            if(betScore > prizeWinnerScore){
+              prizeWinnerCodeList = [];
+              prizeWinnerCodeList.push(user.intcode);
+              prizeWinnerScore = betScore;
+            }
+          }
         });
       });
       game.save();
     });
-    return { success: true };
+    console.log('prizeWinnerCodeList: ' + prizeWinnerCodeList);
+    return { success: true, prizeWinnerCodeList };
   } catch (error) {
     return { success: false, errorMsg: `${game.srId}-${error.name} ` };
   }

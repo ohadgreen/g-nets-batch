@@ -38,6 +38,7 @@ async function insertHourlySchedRecord (keys, hourlyRec) {
         runDateString: hourlyRec.runDateString,
         runUpdate: hourlyRec.runUpdate,
         betsCalc: hourlyRec.betsCalc,
+        contractTxnHash: hourlyRec.contractTxnHash,
         teamStatsUpdate: hourlyRec.teamStatsUpdate,
         insertGamesResult: hourlyRec.insertGamesResult,
         updateGamesResult: hourlyRec.updateGamesResult

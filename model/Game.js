@@ -21,6 +21,7 @@ const gameSchema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'users' },
     winner: String,
     pointsDiff: Number,
+    ether: Number,
     betString: String,
     score: Number,
 }],

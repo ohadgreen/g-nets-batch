@@ -1,6 +1,6 @@
 // const cron = require("node-cron");
 const dateUtils = require('./app/utils/DateUtils');
-// will it recognize?
+const sleepFunc = require('./app/utils/Sleep');
 const shouldProcRun = require('./app/ShouldProcessRun');
 const updateTeamStats = require('./app/UpdateTeamStats');
 const updateRecentGameResults = require('./app/UpdateRecentGamesResultsAndBets');
@@ -24,11 +24,11 @@ async function start() {
 
             updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
             console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
-            await sleep(5000);
+            await sleepFunc.sleepForSeconds(5);
             
             gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
-            await sleep(5000);
+            await sleepFunc.sleepForSeconds(5);
 
             gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
             console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
@@ -60,9 +60,3 @@ async function start() {
     }
 };
 start();
-
-function sleep(ms){
-    return new Promise(resolve => {
-        setTimeout(resolve,ms)
-    })
-};

@@ -8,6 +8,7 @@ const dailyTrackSchema = new Schema(
     runUpdate: Boolean,
     teamStatsUpdate: {success: Boolean, errorResults: [String]},
     betsCalc: Boolean,
+    contractTxnHash: String,
     insertGamesResult: {
       success: Boolean,
       errorMsg: String,

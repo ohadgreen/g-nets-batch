@@ -10,6 +10,7 @@ const keys = require("./config/keys");
 async function start() {    
     const todayObj = dateUtils.calcDayParams(0);
     const todayString = dateUtils.dateObjectToString(todayObj);
+    console.log('*** Release notes: 19-03-13 - refactor update game res error handling');
     console.log('todayString: ' + todayString);  
 
     const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
@@ -34,15 +35,14 @@ async function start() {
             console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
            
             console.log('********** PROCESS COMPLETE ***********');
-            
-            runSuccessAll = true;
+            runSuccessAll = true; 
         } catch (error) {
             console.log('run error: ' + error);
         }        
             shouldProcRun.insertHourlySchedRecordExternal(keys, {
                 runDateString: todayString, 
                 runUpdate: runSuccessAll,
-                betsCalc: false,
+                betsCalc: gamesUpdateRes.betsCalc,
                 teamStatsUpdate: updateTeamsStatsRes,
                 insertGamesResult: gamesInsertRes,
                 updateGamesResult: gamesUpdateRes

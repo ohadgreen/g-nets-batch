@@ -92,6 +92,6 @@ function intArrayToHexArray(intArray){
     console.log('original int array: ' + JSON.stringify(intArray));
     let hexArray = [];
     intArray.map(intcode => hexArray.push(web3js.utils.toHex(intcode)));
-    console.log('hex array: ' + hexArray);
+    // console.log('hex array: ' + hexArray);
     return hexArray;
 }

@@ -4,7 +4,6 @@ require("../model/Team");
 require("../model/Game");
 require("../model/User");
 const dateUtils = require("./utils/DateUtils");
-const sleepFunc = require("./utils/Sleep");
 const fetchGamesFromApi = require("./fetchFromApi/FetchGames");
 const gamesListApiToDb = require("./converters/GamesListApiToDb");
 const contractInteration = require("../eth/contractInteraction");
@@ -15,7 +14,6 @@ const User = mongoose.model("users");
 module.exports = {
   updatePrevDayGamesScore: async daysDiff => {
     let errorMsg = '';
-    let errorCount = 0;
     let updatedGameList = [];
     let totalBetsCalcSuccess = true;
     let contractTxnHash = '';
@@ -52,33 +50,41 @@ module.exports = {
       for (game of dbGamesList) {
         // 5. update game results
         const updateRes = await updateGameScores(game);
-        await sleepFunc.sleepForSeconds(5);
+        console.log('updateRes.gameSrId: ' + updateRes.updatedGameSrId);
+        if(!updateRes.success){
+          errorMsg += updateRes.errorMsg;
+        }
+        else {
+          updatedGameList.push(updateRes.updatedGameSrId);
+        }
 
         // 6. update bet scores for each user
         const updateBetScoreRes = await calculateBetScore(game);
-        await sleepFunc.sleepForSeconds(5);
-
+        if(!updateBetScoreRes.success){
+          errorMsg += updateBetScoreRes.errorMsg;
+          totalBetsCalcSuccess = false;
+        } 
+        // 7. calculate prize winners, returns list of user codes for contract function
         const calcPrizeDist = await calculatePrizeDistribution(game);
-        if (calcPrizeDist.success && calcPrizeDist.prizeWinnerCodeList.length > 0){
+        if(!calcPrizeDist.success){
+          errorMsg += calcPrizeDist.errorMsg;
+        } 
+        console.log('prize winners: ' + calcPrizeDist.prizeWinnerCodeList);
+        if (calcPrizeDist.prizeWinnerCodeList.length > 0){ 
+          console.log('calling prize dist txn');         
           const contractTxnRes = await contractInteration.distributePrizeToWinners(calcPrizeDist.prizeWinnerCodeList);
-          if (contractTxnHash.transactionHash){
+          // console.log('contractRes: ' + JSON.stringify(contractTxnRes));
+          if (contractTxnRes.transactionHash){
             contractTxnHash = contractTxnRes.transactionHash;
           }
-        }
-
-        if (updateRes.success && updateBetScoreRes.success) {
-          updatedGameList.push(updateRes.updatedGameSrId);
-        }
-        if (!updateBetScoreRes.success) {
-          totalBetsCalcSuccess = false;
-        } else {
-          errorMsg += updateRes.errorMsg + updateBetScoreRes.errorMsg;
-          errorCount++;
+          else {
+            errorMsg += 'error running contract function';
+          }
         }
       }
     }
     return {
-      success: errorMsg === "" && errorCount === 0,
+      success: errorMsg === '',
       errorMsg,
       betsCalc: totalBetsCalcSuccess,
       dateString: updateGamesDayString,
@@ -99,8 +105,8 @@ async function calculatePrizeDistribution(game) {
       select: "username score intcode"
     });
 
-    if (gameBetUserCodes) {
-      // console.log(JSON.stringify(gameBetUserCodes));
+    // console.log(JSON.stringify(gameBetUserCodes));
+    if (gameBetUserCodes && gameBetUserCodes.bets.length > 0) {
       let prizeWinnerCodeList = [];
       let prizeWinnerScore = 0;
       for (bet of gameBetUserCodes.bets) {
@@ -121,10 +127,10 @@ async function calculatePrizeDistribution(game) {
       return { success: true, errorMsg: null, prizeWinnerCodeList };
     }
     else {
-      return { success: false, errorMsg: `error fetching bets info`, prizeWinnerCodeList: [] };
+      return { success: true, errorMsg: null, prizeWinnerCodeList: [] };
     }
   } catch (error) {
-    return { success: false, errorMsg: `${game.srId}-not found `, prizeWinnerCodeList: [] };
+    return { success: false, errorMsg: `calc prize error ${game.srId}-not found `, prizeWinnerCodeList: [] };
   }
 }
 
@@ -136,12 +142,12 @@ async function updateGameScores(game) {
       { new: true }
     );
     if (gameUpdateRes) {
-      return { success: true, updatedGameSrId: gameUpdateRes.srId };
+      return { success: true, updatedGameSrId: gameUpdateRes.srId, errorMsg: null };
     } else {
-      return { success: false, errorMsg: `${game.srId}-not found ` };
+      return { success: false, errorMsg: `update game score for ${game.srId}-not found ` };
     }
   } catch (error) {
-    return { success: false, errorMsg: `${game.srId}-${error.name} ` };
+    return { success: false, errorMsg: `pdate game score for ${game.srId}-${error.name} ` };
   }
 }
 
@@ -199,12 +205,10 @@ async function calculateBetScore(game) {
           // console.log(`user: ${user.username} totalBets: ${totalBets}, oldTotal: ${user.bets.totalScore}, newTotal: ${totalScore}, newAvgScore: ${totalScore/totalBets}`);
           user.save();
         });
-        // console.log("userIntCode: " + userIntCode);
       });
       game.save();
     });
-    console.log(`prizeWinnerCodeList: ${prizeWinnerCodeList}`);
-    return { success: true, errorMsg: null, prizeWinnerCodeList: prizeWinnerCodeList };
+    return { success: true, errorMsg: null };
   } catch (error) {
     return { success: false, errorMsg: `${game.srId}-${error.name} ` };
   }

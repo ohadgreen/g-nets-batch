@@ -87,7 +87,6 @@ module.exports = {
       success: errorMsg === '',
       errorMsg,
       betsCalc: totalBetsCalcSuccess,
-      prizeDistribution: prizeDistRes,
       dateString: updateGamesDayString,
       gameList: updatedGameList,
       contractTxnHash: contractTxnHash
@@ -153,11 +152,8 @@ async function updateGameScores(game) {
 }
 
 async function calculateBetScore(game) {
-  let prizeWinnerCodeList = [];
-  console.log('game srId: ' + game.srId);
   try {
     await Game.findOne({ srId: game.srId }).exec(function(err, game) {
-      console.log('db game ' + game.srId);
       if (err) {
         console.log(err);
         return { success: false, errorMsg: `${game.srId}-${err.name} ` };
@@ -168,7 +164,6 @@ async function calculateBetScore(game) {
           : "awayTeam";
       const actualPointsDiff = Math.abs(game.results.homePoints - game.results.awayPoints);
       
-      let prizeWinnerScore = 0;
       game.bets.forEach(bet => {
         let betScore = 0;
         // calculate bet score:

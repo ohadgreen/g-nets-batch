@@ -74,16 +74,7 @@ async function transferPrizeToSingleWinnerTxnDetails() {
 
 async function transferPrizeToWinnerListTxnDetails(winnerIntCodeList) {
     const winnerArrayHex = intArrayToHexArray(winnerIntCodeList);
-<<<<<<< HEAD
     let nonce = await web3js.eth.getTransactionCount(keys.MANAGER_ADDRESS);
-=======
-    const hex10 = web3js.utils.toHex(10);
-    const hex20 = web3js.utils.toHex(20);
-    console.log('10: ' + hex10 + ' hex20: ' + hex20);
-
-    let nonce = await web3js.eth.getTransactionCount(keys.MANAGER_ADDRESS);
-    console.log('nonce: ' + nonce);
->>>>>>> master
     //creating raw tranaction
     const prizeToWinnersTxnDetails = {
         "from": keys.MANAGER_ADDRESS, 
@@ -101,10 +92,6 @@ function intArrayToHexArray(intArray){
     console.log('original int array: ' + JSON.stringify(intArray));
     let hexArray = [];
     intArray.map(intcode => hexArray.push(web3js.utils.toHex(intcode)));
-<<<<<<< HEAD
     // console.log('hex array: ' + hexArray);
-=======
-    console.log('hex array: ' + hexArray);
->>>>>>> master
     return hexArray;
 }

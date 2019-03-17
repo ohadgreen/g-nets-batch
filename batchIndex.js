@@ -10,7 +10,7 @@ const keys = require("./config/keys");
 async function start() {    
     const todayObj = dateUtils.calcDayParams(0);
     const todayString = dateUtils.dateObjectToString(todayObj);
-    console.log('*** Release notes: 19-03-13 - refactor update game res error handling');
+    console.log('*** Release notes: 19-03-17 - test prize dist transaction');
     console.log('todayString: ' + todayString);  
 
     const shouldRun = true; //await shouldProcRun.checkLastRunDay(keys, todayString);

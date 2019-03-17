@@ -8,6 +8,7 @@ const contract = new web3js.eth.Contract(INTERFACE, keys.CONTRACT_ADDRESS);
 
 module.exports = {
     distributePrizeToWinners: async winnerIntCodeList => {
+        console.log('contract address: ' + keys.CONTRACT_ADDRESS);
         const txnDetails = await transferPrizeToWinnerListTxnDetails(winnerIntCodeList);
         const contractTxn = new Tx(txnDetails);
         contractTxn.sign(Buffer.from(keys.MANAGER_PRIVATE_KEY, 'hex'));

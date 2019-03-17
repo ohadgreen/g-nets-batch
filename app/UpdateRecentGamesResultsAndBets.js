@@ -105,11 +105,12 @@ async function calculatePrizeDistribution(game) {
       select: "username score intcode"
     });
 
-    // console.log(JSON.stringify(gameBetUserCodes));
+    console.log(JSON.stringify(gameBetUserCodes));
     if (gameBetUserCodes && gameBetUserCodes.bets.length > 0) {
       let prizeWinnerCodeList = [];
       let prizeWinnerScore = 0;
       for (bet of gameBetUserCodes.bets) {
+        console.log(`${bet.user.intcode}- ether: ${bet.ether} score: ${bet.score}`);
         if (bet.ether > 0 && bet.score > 0) {
           // equal score => add user to prize winners list
           if (bet.score === prizeWinnerScore) {
@@ -119,7 +120,7 @@ async function calculatePrizeDistribution(game) {
           if (bet.score > prizeWinnerScore) {
             prizeWinnerCodeList = [];
             prizeWinnerCodeList.push(bet.user.intcode);            
-            // console.log(`${bet.score} > ${prizeWinnerScore} push ${bet.user.intcode} pwcl ${prizeWinnerCodeList}`);
+            console.log(`${bet.score} > ${prizeWinnerScore} push ${bet.user.intcode} pwcl ${prizeWinnerCodeList}`);
             prizeWinnerScore = bet.score;
           }
         }

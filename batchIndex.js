@@ -13,7 +13,7 @@ async function start() {
     console.log('*** Release notes: 19-03-17 - add prod ethereum params');
     console.log('todayString: ' + todayString);  
 
-    const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
+    const shouldRun = true; //await shouldProcRun.checkLastRunDay(keys, todayString);
     console.log('should run: ' + shouldRun);
 
     if(shouldRun){
@@ -23,16 +23,16 @@ async function start() {
             console.log('********** PROCESS START ***********');
             console.log('process.env: ' + process.env.NODE_ENV + ' Time: ' + new Date());
 
-            updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
-            console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
-            await sleepFunc.sleepForSeconds(5);
+            // updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
+            // console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
+            // await sleepFunc.sleepForSeconds(5);
             
             gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
             await sleepFunc.sleepForSeconds(5);
 
-            gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
-            console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
+            // gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
+            // console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
            
             console.log('********** PROCESS COMPLETE ***********');
             runSuccessAll = true; 

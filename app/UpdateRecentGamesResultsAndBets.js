@@ -47,54 +47,70 @@ module.exports = {
         errorMsg = "error update recent to archive";
       }
 
+      let prizeWinners = [];
       for (game of dbGamesList) {
         // 5. update game results
         const updateRes = await updateGameScores(game);
-        console.log('updateRes.gameSrId: ' + updateRes.updatedGameSrId);
+        console.log('updated game scores for: ' + updateRes.updatedGameSrId);
         if(!updateRes.success){
           errorMsg += updateRes.errorMsg;
         }
         else {
           updatedGameList.push(updateRes.updatedGameSrId);
-        }
+        }    
 
         // 6. update bet scores for each user
         const updateBetScoreRes = await calculateBetScore(game);
         if(!updateBetScoreRes.success){
           errorMsg += updateBetScoreRes.errorMsg;
           totalBetsCalcSuccess = false;
-        } 
+        }
+        console.log('updated bet scores for: ' + game.srId);
+        
         // 7. calculate prize winners, returns list of user codes for contract function
-        const calcPrizeDist = await calculatePrizeDistribution(game);
-        if(!calcPrizeDist.success){
-          errorMsg += calcPrizeDist.errorMsg;
-        } 
-        console.log('prize winners: ' + calcPrizeDist.prizeWinnerCodeList);
-        if (calcPrizeDist.prizeWinnerCodeList.length > 0){ 
-          console.log('calling prize dist txn');         
-          const contractTxnRes = await contractInteration.distributePrizeToWinners(calcPrizeDist.prizeWinnerCodeList);
-          // console.log('contractRes: ' + JSON.stringify(contractTxnRes));
-          if (contractTxnRes.transactionHash){
-            contractTxnHash = contractTxnRes.transactionHash;
+          const calcPrizeDist = await calculatePrizeWinners(game);
+          console.log('calculate prize winners for: ' + game.srId);
+          if(!calcPrizeDist.success){
+            errorMsg += calcPrizeDist.errorMsg;
           }
-          else {
-            errorMsg += 'error running contract function';
-          }
+          else if (calcPrizeDist.prizeWinnerCodeList.length > 0){
+            console.log('prize winners: ' + calcPrizeDist.prizeWinnerCodeList); 
+            prizeWinners = calcPrizeDist.prizeWinnerCodeList;
+          }                                   
+      }
+      // 8. call contract to distribute prize to winners
+      if (prizeWinners.length > 0){ 
+        console.log('calling prize dist txn for ' + prizeWinners);         
+        const contractTxnRes = await contractInteration.distributePrizeToWinners(prizeWinners);
+        // console.log('contractRes: ' + JSON.stringify(contractTxnRes));
+        if (contractTxnRes.transactionHash){
+          contractTxnHash = contractTxnRes.transactionHash;
+        }
+        else {
+          errorMsg += 'error running contract function';
         }
       }
     }
     return {
+      success: errorMsg === '',
+      errorMsg: 'test',
+      betsCalc: 'test',
+      dateString: 'test',
+      gameList: 'test',
+      contractTxnHash: 'test'
+    };
+   /*  return {
       success: errorMsg === '',
       errorMsg,
       betsCalc: totalBetsCalcSuccess,
       dateString: updateGamesDayString,
       gameList: updatedGameList,
       contractTxnHash: contractTxnHash
-    };
+    }; */
   }
 };
 
-async function calculatePrizeDistribution(game) {
+async function calculatePrizeWinners(game) {  
   try {
     const gameBetUserCodes = await Game.findOne(
       { srId: game.srId },
@@ -105,7 +121,7 @@ async function calculatePrizeDistribution(game) {
       select: "username score intcode"
     });
 
-    console.log(JSON.stringify(gameBetUserCodes));
+    console.log('calc prize winners for ' + game.srId + '\n' + JSON.stringify(gameBetUserCodes));
     if (gameBetUserCodes && gameBetUserCodes.bets.length > 0) {
       let prizeWinnerCodeList = [];
       let prizeWinnerScore = 0;
@@ -133,6 +149,7 @@ async function calculatePrizeDistribution(game) {
   } catch (error) {
     return { success: false, errorMsg: `calc prize error ${game.srId}-not found `, prizeWinnerCodeList: [] };
   }
+
 }
 
 async function updateGameScores(game) {
@@ -185,10 +202,7 @@ async function calculateBetScore(game) {
         bet.score = betScore;
         // console.log(`winner: ${bet.winner} | bet: ${bet.betString} | score: ${betScore}`);
         // update the users collection with recent bet score
-        User.findOne({ _id: mongoose.Types.ObjectId(bet.user) }, function(
-          err,
-          user
-        ) {
+        User.findOne({ _id: mongoose.Types.ObjectId(bet.user) }, function(err, user) {
           if (err) {
             console.log(err);
             return {

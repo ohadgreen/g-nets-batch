@@ -75,15 +75,7 @@ module.exports = {
       dateString: updateGamesDayString,
       gameList: updatedGameList,
       contractTxnHash: contractTxnHash
-    };
-   /*  return {
-      success: errorMsg === '',
-      errorMsg,
-      betsCalc: totalBetsCalcSuccess,
-      dateString: updateGamesDayString,
-      gameList: updatedGameList,
-      contractTxnHash: contractTxnHash
-    }; */
+    };  
   }
 };
 

@@ -8,6 +8,8 @@ const gamesInfoUpdate = require('./app/InsertNextScheduleGames');
 const keys = require("./config/keys");
 
 async function start() {    
+    //TODO: add contract txn to dailytrack record
+    
     const todayObj = dateUtils.calcDayParams(0);
     const todayString = dateUtils.dateObjectToString(todayObj);
     console.log('*** Release notes: 19-03-26 - refactor update part to chain bet score calc');

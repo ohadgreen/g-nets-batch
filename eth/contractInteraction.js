@@ -90,7 +90,7 @@ async function transferPrizeToWinnerListTxnDetails(winnerIntCodeList) {
 }
 
 function intArrayToHexArray(intArray){
-    console.log('original int array: ' + JSON.stringify(intArray));
+    // console.log('original int array: ' + JSON.stringify(intArray));
     let hexArray = [];
     intArray.map(intcode => hexArray.push(web3js.utils.toHex(intcode)));
     // console.log('hex array: ' + hexArray);

@@ -6,7 +6,7 @@ require("../model/User");
 const dateUtils = require("./utils/DateUtils");
 const fetchGamesFromApi = require("./fetchFromApi/FetchGames");
 const gamesListApiToDb = require("./converters/GamesListApiToDb");
-const contractInteration = require("../eth/contractInteraction");
+const contractInteraction = require("../eth/contractInteraction");
 const keys = require("../config/keys");
 const Game = mongoose.model("games");
 const User = mongoose.model("users");
@@ -15,7 +15,6 @@ module.exports = {
   updatePrevDayGamesScore: async daysDiff => {
     let errorMsg = '';
     let updatedGameList = [];
-    let totalBetsCalcSuccess = true;
     let contractTxnHash = '';
     // 1. calculate date
     const updateGamesDayObject = dateUtils.calcDayParams(daysDiff);
@@ -47,7 +46,6 @@ module.exports = {
         errorMsg = "error update recent to archive";
       }
 
-      let prizeWinners = [];
       for (game of dbGamesList) {
         // 5. update game results
         const updateRes = await updateGameScores(game);
@@ -59,45 +57,24 @@ module.exports = {
           updatedGameList.push(updateRes.updatedGameSrId);
         }    
 
-        // 6. update bet scores for each user
-        const updateBetScoreRes = await calculateBetScore(game);
-        if(!updateBetScoreRes.success){
-          errorMsg += updateBetScoreRes.errorMsg;
-          totalBetsCalcSuccess = false;
-        }
-        console.log('updated bet scores for: ' + game.srId);
-        
-        // 7. calculate prize winners, returns list of user codes for contract function
-          const calcPrizeDist = await calculatePrizeWinners(game);
-          console.log('calculate prize winners for: ' + game.srId);
-          if(!calcPrizeDist.success){
-            errorMsg += calcPrizeDist.errorMsg;
+        calculateBetScore(game, async function(res) {
+          console.log('calc bets score res:\n' + JSON.stringify(res));
+          const prizeWinners = findPrizeWinners(res);
+          if(prizeWinners.length > 0) {
+            console.log('prize Winners: ' + prizeWinners);
+            contractTxnHash = await contractInteraction.distributePrizeToWinners(prizeWinners);
+            console.log('txn: ' + JSON.stringify(contractTxnHash));
           }
-          else if (calcPrizeDist.prizeWinnerCodeList.length > 0){
-            console.log('prize winners: ' + calcPrizeDist.prizeWinnerCodeList); 
-            prizeWinners = calcPrizeDist.prizeWinnerCodeList;
-          }                                   
-      }
-      // 8. call contract to distribute prize to winners
-      if (prizeWinners.length > 0){ 
-        console.log('calling prize dist txn for ' + prizeWinners);         
-        const contractTxnRes = await contractInteration.distributePrizeToWinners(prizeWinners);
-        // console.log('contractRes: ' + JSON.stringify(contractTxnRes));
-        if (contractTxnRes.transactionHash){
-          contractTxnHash = contractTxnRes.transactionHash;
-        }
-        else {
-          errorMsg += 'error running contract function';
-        }
-      }
+      });                                    
+      }      
     }
     return {
       success: errorMsg === '',
-      errorMsg: 'test',
-      betsCalc: 'test',
-      dateString: 'test',
-      gameList: 'test',
-      contractTxnHash: 'test'
+      errorMsg,
+      betsCalc: true,
+      dateString: updateGamesDayString,
+      gameList: updatedGameList,
+      contractTxnHash: contractTxnHash
     };
    /*  return {
       success: errorMsg === '',
@@ -110,46 +87,26 @@ module.exports = {
   }
 };
 
-async function calculatePrizeWinners(game) {  
-  try {
-    const gameBetUserCodes = await Game.findOne(
-      { srId: game.srId },
-      { _id: 0, bets: 1 }
-    ).populate({
-      path: "bets.user",
-      model: "users",
-      select: "username score intcode"
-    });
-
-    console.log('calc prize winners for ' + game.srId + '\n' + JSON.stringify(gameBetUserCodes));
-    if (gameBetUserCodes && gameBetUserCodes.bets.length > 0) {
-      let prizeWinnerCodeList = [];
-      let prizeWinnerScore = 0;
-      for (bet of gameBetUserCodes.bets) {
-        // console.log(`${bet.user.intcode}- ether: ${bet.ether} score: ${bet.score}`);
-        if (bet.ether > 0 && bet.score > 0) {
-          // equal score => add user to prize winners list
-          if (bet.score === prizeWinnerScore) {
-            prizeWinnerCodeList.push(bet.user.intcode);
-          }
-          // higher score => empty current list, add new user, update prizeScore
-          if (bet.score > prizeWinnerScore) {
-            prizeWinnerCodeList = [];
-            prizeWinnerCodeList.push(bet.user.intcode);            
-            // console.log(`${bet.score} > ${prizeWinnerScore} push ${bet.user.intcode} pwcl ${prizeWinnerCodeList}`);
-            prizeWinnerScore = bet.score;
-          }
+function findPrizeWinners(bets) {
+  let prizeWinnerCodeList = [];
+    let prizeWinnerScore = 0;
+    for (bet of bets) {
+      // console.log(`${bet.user}- intcode: ${bet.intcode} ether: ${bet.ether} score: ${bet.score}`);
+      if (bet.ether > 0 && bet.score > 0) {
+        // equal score => add user to prize winners list
+        if (bet.score === prizeWinnerScore) {
+          prizeWinnerCodeList.push(bet.intcode);
+        }
+        // higher score => empty current list, add new user, update prizeScore
+        if (bet.score > prizeWinnerScore) {
+          prizeWinnerCodeList = [];
+          prizeWinnerCodeList.push(bet.intcode);            
+          // console.log(`${bet.score} > ${prizeWinnerScore} push ${bet.intcode} pwcl ${prizeWinnerCodeList}`);
+          prizeWinnerScore = bet.score;
         }
       }
-      return { success: true, errorMsg: null, prizeWinnerCodeList };
     }
-    else {
-      return { success: true, errorMsg: null, prizeWinnerCodeList: [] };
-    }
-  } catch (error) {
-    return { success: false, errorMsg: `calc prize error ${game.srId}-not found `, prizeWinnerCodeList: [] };
-  }
-
+  return prizeWinnerCodeList;
 }
 
 async function updateGameScores(game) {
@@ -169,7 +126,7 @@ async function updateGameScores(game) {
   }
 }
 
-async function calculateBetScore(game) {
+async function calculateBetScore(game, distributePrize) {
   try {
     await Game.findOne({ srId: game.srId }).exec(function(err, game) {
       if (err) {
@@ -220,7 +177,9 @@ async function calculateBetScore(game) {
           user.save();
         });
       });
-      game.save();
+      game.save(function(err, game) {
+        return distributePrize(game.bets);
+      });
     });
     return { success: true, errorMsg: null };
   } catch (error) {

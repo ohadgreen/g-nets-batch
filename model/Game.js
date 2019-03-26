@@ -19,6 +19,7 @@ const gameSchema = new Schema({
   results: { homePoints: Number, awayPoints: Number },
   bets: [{
     user: { type: Schema.Types.ObjectId, ref: 'users' },
+    intcode: Number,
     winner: String,
     pointsDiff: Number,
     ether: Number,

@@ -14,6 +14,7 @@ module.exports = {
       isNewGame: isNew,
       isRecentGame: isRecent,
       isArchiveGame: false,
+      playoffSeries: apiGameData.playoffSeries,
       homeTeam: apiGameData.homeTeamDbId,
       awayTeam: apiGameData.awayTeamDbId,
       gameRank: {

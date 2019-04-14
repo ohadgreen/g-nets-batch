@@ -1,4 +1,3 @@
-// const cron = require("node-cron");
 const dateUtils = require('./app/utils/DateUtils');
 const sleepFunc = require('./app/utils/Sleep');
 const shouldProcRun = require('./app/ShouldProcessRun');
@@ -9,10 +8,14 @@ const keys = require("./config/keys");
 
 async function start() {    
     //TODO: add contract txn to dailytrack record
+    // Playoffs: 
+    // 1. query games schedule and results the same way from http://api.sportradar.us/nba/trial/v5/en/games/2018/04/15/schedule.json?api_key=
+    // 2. query series data to fetch series title, round and serie score from http://api.sportradar.us/nba/trial/v5/en/series/2017/PST/schedule.json?api_key=
+    // 3. query teams wins, losses and stats from http://api.sportradar.us/nba/trial/v5/en/seasons/2018/PST/standings.json?api_key=
     
     const todayObj = dateUtils.calcDayParams(0);
     const todayString = dateUtils.dateObjectToString(todayObj);
-    console.log('*** Release notes: 19-03-26 - refactor update part to chain bet score calc');
+    console.log('*** Release notes: 19-04-14 - added playoff series info to games');
     console.log('todayString: ' + todayString);  
 
     const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
@@ -44,7 +47,7 @@ async function start() {
             shouldProcRun.insertHourlySchedRecordExternal(keys, {
                 runDateString: todayString, 
                 runUpdate: runSuccessAll,
-                betsCalc: gamesUpdateRes.betsCalc,
+                // betsCalc: gamesUpdateRes.betsCalc,
                 teamStatsUpdate: updateTeamsStatsRes,
                 insertGamesResult: gamesInsertRes,
                 updateGamesResult: gamesUpdateRes

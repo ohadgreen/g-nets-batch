@@ -8,6 +8,15 @@ const gameSchema = new Schema({
   isNewGame: Boolean,
   isRecentGame: Boolean,
   isArchiveGame: Boolean,
+  playoffSeries: {
+    seriesTitle: String,
+    round: Number,
+    status: String,
+    gameTitle: String,
+    homeTeamRecord: Number,
+    awayTeamRecord: Number,
+
+  },
   homeTeam: { type: Schema.Types.ObjectId, ref: 'teams' },
   awayTeam: { type: Schema.Types.ObjectId, ref: 'teams' },
   gameRank: {

@@ -105,7 +105,12 @@ async function updateGameScores(game) {
   try {
     const gameUpdateRes = await Game.findOneAndUpdate(
       { srId: game.srId },
-      { $set: { results: game.results, isNewGame: false, isRecentGame: true } },
+      { $set: { 
+          results: game.results, 
+          isNewGame: false, 
+          isRecentGame: true, 
+          playoffSeries: game.playoffSeries
+        } },
       { new: true }
     );
     if (gameUpdateRes) {

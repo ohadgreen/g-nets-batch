@@ -8,6 +8,7 @@ const SERIES_INFO_URL = "http://api.sportradar.us/nba/trial/v5/en/series/2018/PS
 
 // fetch teams stats, lookup each game to update team id
 // calc game importance rank by total team rank
+// fill playoff series info on post season
 
 module.exports = {
   convert: async (apiGamesSched, isNew, isRecent) => {
@@ -64,7 +65,7 @@ function findPlayoffInfoForGame(game, homeTeamName, awayTeamName, playoffSeriesI
   let playoffSeries = {};
   for (serie of playoffSeriesInfo.apiData.series){
     if(serie.participants[0].name === homeTeamName || serie.participants[0].name === awayTeamName){
-      console.log('serie teams: ' + serie.participants[0].name + ' vs. ' + serie.participants[1].name);
+      // console.log(`${serie.participants[0].name} ${homeTeamName} ${awayTeamName}`);
       for(playoffGame of serie.games){
         if (game.sr_id === playoffGame.sr_id){
           playoffSeries["seriesTitle"] = serie.title;

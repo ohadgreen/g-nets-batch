@@ -3,10 +3,10 @@ require("../model/DailyTrack");
 const ProcessTrack = mongoose.model("dailytrack");
 
 module.exports = {
-  // process should run only after 8am, then check if it didn't aleardy ran today
+  // process should run only after 9am (day light saving time), then check if it didn't aleardy ran today
   checkLastRunDay: async (keys, todayString) => {     
     const hour = new Date().getHours();
-    if(hour >= 6){
+    if(hour >= 5){
       mongoose.connect(keys.MONGO_URI,{ useNewUrlParser: true });
   
       const todayProcessRan = await ProcessTrack.find({ runDateString : todayString, runUpdate: true });

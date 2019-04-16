@@ -1,8 +1,10 @@
 const axios = require("axios");
+const sleepFunc = require("../../app/utils/Sleep");
 
 module.exports = {
   fetchData: async url => {
-    //   console.log('api url: ' + url);
+     console.log('api url: ' + url);
+
     try {
       const response = await axios({
         url: url,
@@ -12,6 +14,8 @@ module.exports = {
           "Access-Control-Allow-Origin": "*"
         }
       });
+      await sleepFunc.sleepForSeconds(5);
+      
       if (response.status === 200 && response.data) {
         return { success: true, apiData: response.data };
       } else {

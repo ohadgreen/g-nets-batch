@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 require("../../model/Team");
 const Team = mongoose.model("teams");
+const sleepFunc = require('../../app/utils/Sleep');
 const convertApiGameToDb = require("./GameApiToDb");
 const fetchFromApi = require("../fetchFromApi/FetchFromApi");
 const keys = require("../../config/keys");
@@ -45,7 +46,7 @@ module.exports = {
         // fill playoff series info
         if(playoffs){
           // console.log('playoffSeries: ' + JSON.stringify(playoffSeries));
-          game["playoffSeries"] = findPlayoffInfoForGame(game, homeTeamName, awayTeamName, playoffSeriesInfo);
+          game["playoffSeries"] = findPlayoffInfoForGame(game, homeTeamName, awayTeamName, playoffSeriesInfo);          
         }
       }
   
@@ -81,9 +82,9 @@ function findPlayoffInfoForGame(game, homeTeamName, awayTeamName, playoffSeriesI
             playoffSeries["awayTeamRecord"] = serie.participants[0].record;
           }
         }
-        break;
+        // break;
       }
-      break;
+      // break;
     }          
   }
   return playoffSeries;

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 mongoose.set("useFindAndModify", false);
 require("../model/Team");
 require("../model/Game");
+const sleepFunc = require('../app/utils/Sleep');
 const dateUtils = require("./utils/DateUtils");
 const fetchGamesFromApi = require("./fetchFromApi/FetchGames");
 const gamesListApiToDb = require("./converters/GamesListApiToDb");

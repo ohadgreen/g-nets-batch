@@ -1,5 +1,4 @@
 const dateUtils = require('./app/utils/DateUtils');
-const sleepFunc = require('./app/utils/Sleep');
 const shouldProcRun = require('./app/ShouldProcessRun');
 const updateTeamStats = require('./app/UpdateTeamStats');
 const updateRecentGameResults = require('./app/UpdateRecentGamesResultsAndBets');
@@ -30,11 +29,9 @@ async function start() {
 
             updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
             console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
-            await sleepFunc.sleepForSeconds(5);
             
             gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
-            await sleepFunc.sleepForSeconds(5);
 
             gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
             console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));

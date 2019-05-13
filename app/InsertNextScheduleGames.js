@@ -34,8 +34,8 @@ module.exports = {
         true,
         false
       );
-      if (dbGamesList.error) {
-        errorMsg = dbGamesList.error;
+      if (dbGamesList.error || dbGamesList.length === 0 ) {
+        errorMsg = "error converting games or no games found";
       } else {
         // 4. save in db
         const dbSaveRes = await insertGamesBatchToDb(dbGamesList);

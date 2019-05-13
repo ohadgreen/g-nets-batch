@@ -14,7 +14,7 @@ async function start() {
     
     const todayObj = dateUtils.calcDayParams(0);
     const todayString = dateUtils.dateObjectToString(todayObj);
-    console.log('*** Release notes: 19-04-14 - added playoff series info to games');
+    console.log('*** Release notes: 19-05-13 - check that new game has sr_id');
     console.log('todayString: ' + todayString);  
 
     const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);

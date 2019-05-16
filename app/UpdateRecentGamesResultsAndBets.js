@@ -62,8 +62,8 @@ module.exports = {
           const prizeWinners = findPrizeWinners(res);
           if(prizeWinners.length > 0) {
             console.log('prize Winners: ' + prizeWinners);
-            // contractTxnHash = await contractInteraction.distributePrizeToWinners(prizeWinners);
-            // console.log('txn: ' + JSON.stringify(contractTxnHash));
+            contractTxnHash = await contractInteraction.distributePrizeToWinners(prizeWinners);
+            console.log('txn: ' + JSON.stringify(contractTxnHash));
           }
       });                                    
       }      

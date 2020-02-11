@@ -60,7 +60,7 @@ module.exports = {
         calculateBetScore(game, async function(res) {
           console.log('calc bets score res:\n' + JSON.stringify(res));
           const prizeWinners = findPrizeWinners(res);
-          if(prizeWinners.length > 0) {
+          if(keys.CALL_CONTRACT && prizeWinners.length > 0) {
             console.log('prize Winners: ' + prizeWinners);
             contractTxnHash = await contractInteraction.distributePrizeToWinners(prizeWinners);
             console.log('txn: ' + JSON.stringify(contractTxnHash));

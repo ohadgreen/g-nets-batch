@@ -4,10 +4,6 @@ const convertApiTeamToDbTeam = require("./converters/TeamApiToDb");
 const keys = require("../config/keys");
 require("../model/Team");
 const Team = mongoose.model("teams");
-const YEAR = 2018;
-const SEASON_TYPE = "REG";
-const API_URL =
-  "http://api.sportradar.us/nba/trial/v5/en/seasons/YEAR/SEASON_TYPE/standings.json";
 
 module.exports = {
   updateTeamStatsInDb: async keys => {
@@ -49,9 +45,9 @@ module.exports = {
 };
 
 async function fetchTeamStatsFromApi() {
-  let teamStatsApiUrl = API_URL.replace("YEAR", YEAR).replace(
-    "SEASON_TYPE",
-    SEASON_TYPE
+  let teamStatsApiUrl = keys.TEAMS_INFO_URL
+      .replace("YEAR", keys.SEASON_YEAR)
+      .replace("SEASON_TYPE", keys.SEASON_TYPE
   );
   teamStatsApiUrl += "?api_key=" + keys.SPORTRADAR_API_KEY;
   return await fetchFromApi.fetchData(teamStatsApiUrl);

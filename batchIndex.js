@@ -17,7 +17,7 @@ async function start() {
     console.log('*** Release notes: 19-05-13 - check that new game has sr_id');
     console.log('todayString: ' + todayString);  
 
-    const shouldRun = await shouldProcRun.checkLastRunDay(keys, todayString);
+    const shouldRun = true; // await shouldProcRun.checkLastRunDay(keys, todayString);
     console.log('should run: ' + shouldRun);
 
     if(shouldRun){
@@ -29,13 +29,13 @@ async function start() {
 
             updateTeamsStatsRes = await updateTeamStats.updateTeamStatsInDb(keys);
             console.log('update team stats result: ' + JSON.stringify(updateTeamsStatsRes));
-            
+
             gamesUpdateRes = await updateRecentGameResults.updatePrevDayGamesScore(-1);
             console.log('prev day games update result: ' + JSON.stringify(gamesUpdateRes));
 
             gamesInsertRes = await gamesInfoUpdate.insertNextDayGames(0);
             console.log('next day games insert result: ' + JSON.stringify(gamesInsertRes));
-           
+
             console.log('********** PROCESS COMPLETE ***********');
             runSuccessAll = true; 
         } catch (error) {

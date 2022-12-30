@@ -17,7 +17,7 @@
     "express": "^4.16.4",
     "fs": "0.0.1-security",
     "ganache-cli": "^6.9.0",
-    "mocha": "^6.0.2",
+    "mocha": "^10.2.0",
     "mongoose": "^5.8.11",
     "node-cron": "^2.0.3",
     "request": "^2.88.0",
